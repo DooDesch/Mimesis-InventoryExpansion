@@ -2,7 +2,7 @@
   "name": "InventoryExpansion",
   "version_number": "1.0.0",
   "website_url": "https://github.com/DooDesch/Mimesis-InventoryExpansion",
-  "description": "A boilerplate template for Mimesis mods. Replace this with your mod description.",
+  "description": "Expand your inventory with additional backpack slots. Toggle between standard inventory and backpack with a configurable key.",
   "dependencies": [
     "LavaGang-MelonLoader-0.7.1"
   ],

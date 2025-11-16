@@ -200,7 +200,7 @@ jobs:
           community: mimesis
           namespace: DooDesch
           name: InventoryExpansion
-          description: A boilerplate template for Mimesis mods. Replace this with your mod description.
+          description: Expand your inventory with additional backpack slots. Toggle between standard inventory and backpack with a configurable key.
           version: ${{ needs.build.outputs.version }}
           repo: mimesis.thunderstore.io
           path: thunderstore-package
