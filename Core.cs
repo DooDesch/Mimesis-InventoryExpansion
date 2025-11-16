@@ -3,8 +3,6 @@ using MelonLoader;
 
 [assembly: MelonInfo(typeof(InventoryExpansion.Core), "InventoryExpansion", "1.0.0", "DooDesch", null)]
 [assembly: MelonGame("ReLUGames", "MIMESIS")]
-// Uncomment if using MimicAPI
-// [assembly: MelonOptionalDependencies("MimicAPI")]
 
 namespace InventoryExpansion
 {

@@ -48,7 +48,6 @@ namespace InventoryExpansion.Patches
 				MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
 
 				SetBackpackVisibility(false);
-				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Created BLACK BACKPACK PANEL at bottom-right.");
 			}
 			catch (Exception ex)
 			{
@@ -93,8 +92,6 @@ namespace InventoryExpansion.Patches
 			if (mainCanvas != null)
 			{
 				canvas.sortingOrder = mainCanvas.sortingOrder + 1;
-				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Using Constant Pixel Size scaling. Main canvas: {0}, Screen resolution: {1}x{2}", 
-					mainCanvas.name, Screen.width, Screen.height);
 			}
 			
 			_canvasObj.AddComponent<GraphicRaycaster>();
@@ -189,6 +186,26 @@ namespace InventoryExpansion.Patches
 
 		internal static bool IsBackpackVisible => _backpackVisible;
 
+		private static (float padding, float paddingTop, float paddingBottom) GetPaddingForSlotCount(int additionalSlots)
+		{
+			return additionalSlots switch
+			{
+				4 => (90f, 130f, 90f),
+				9 => (160f, 200f, 140f),
+				_ => (200f, 240f, 180f)
+			};
+		}
+
+		private static (float horizontal, float top) GetSlotPaddingForSlotCount(int additionalSlots)
+		{
+			return additionalSlots switch
+			{
+				4 => (90f, 170f),
+				9 => (160f, 260f),
+				_ => (200f, 320f)
+			};
+		}
+
 		private static IEnumerator MoveSlotsToPanelCoroutine(UIPrefab_Inventory inventoryUI)
 		{
 			yield return null;
@@ -237,8 +254,6 @@ namespace InventoryExpansion.Patches
 				frameWidth *= scaleFactor;
 				frameHeight *= scaleFactor;
 				
-				float containerWidth = frameWidth;
-				float containerHeight = frameHeight;
 				Image templateBG = null;
 				var originalSlotContainer = firstFrameRT.parent;
 				if (originalSlotContainer != null)
@@ -251,12 +266,6 @@ namespace InventoryExpansion.Patches
 							templateBG = child.GetComponent<Image>();
 							if (templateBG != null)
 							{
-								var bgRT = templateBG.rectTransform;
-								if (bgRT != null)
-								{
-									containerWidth = bgRT.sizeDelta.x;
-									containerHeight = bgRT.sizeDelta.y;
-								}
 								break;
 							}
 						}
@@ -289,25 +298,7 @@ namespace InventoryExpansion.Patches
 				float slotsAreaWidth = slotsPerRow * frameWidth + (slotsPerRow + 1) * slotSpacing;
 				float slotsAreaHeight = rows * frameHeight + (rows + 1) * slotSpacing;
 				
-				float padding, paddingTop, paddingBottom;
-				if (additionalSlots == 4)
-				{
-					padding = 90f;
-					paddingTop = 130f;
-					paddingBottom = 90f;
-				}
-				else if (additionalSlots == 9)
-				{
-					padding = 160f;
-					paddingTop = 200f;
-					paddingBottom = 140f;
-				}
-				else
-				{
-					padding = 200f;
-					paddingTop = 240f;
-					paddingBottom = 180f;
-				}
+				var (padding, paddingTop, paddingBottom) = GetPaddingForSlotCount(additionalSlots);
 				
 				float panelWidth = slotsAreaWidth + padding * 2f;
 				float panelHeight = slotsAreaHeight + paddingTop + paddingBottom;
@@ -347,22 +338,7 @@ namespace InventoryExpansion.Patches
 					containerRT.anchorMax = new Vector2(0f, 1f);
 					containerRT.pivot = new Vector2(0f, 1f);
 
-					float slotPaddingHorizontal, slotPaddingTop;
-					if (additionalSlots == 4)
-					{
-						slotPaddingHorizontal = 90f;
-						slotPaddingTop = 170f;
-					}
-					else if (additionalSlots == 9)
-					{
-						slotPaddingHorizontal = 160f;
-						slotPaddingTop = 260f;
-					}
-					else
-					{
-						slotPaddingHorizontal = 200f;
-						slotPaddingTop = 320f;
-					}
+					var (slotPaddingHorizontal, slotPaddingTop) = GetSlotPaddingForSlotCount(additionalSlots);
 					
 					float x = slotPaddingHorizontal + slotSpacing + col * (frameWidth + slotSpacing);
 					float y = -(slotPaddingTop + slotSpacing + row * (frameHeight + slotSpacing));
@@ -515,9 +491,7 @@ namespace InventoryExpansion.Patches
 				if (wasKeyPressedThisFrame)
 				{
 					bool currentVisibility = BackpackPanelPatch.IsBackpackVisible;
-					MelonLogger.Msg($"[InventoryExpansion][BackpackPanel] Toggle key pressed. Current visibility: {currentVisibility}");
 					BackpackPanelPatch.SetBackpackVisibility(!currentVisibility);
-					MelonLogger.Msg($"[InventoryExpansion][BackpackPanel] New visibility: {!currentVisibility}");
 				}
 			}
 			catch (Exception ex)

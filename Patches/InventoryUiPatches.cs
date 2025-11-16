@@ -135,9 +135,7 @@ namespace InventoryExpansion.Patches
 					newFrame.sprite = templateFrame.sprite;
 					newFrame.type = templateFrame.type;
 					newFrame.material = templateFrame.material;
-
-					Color debugColor = new Color(1f, 0f, 0f, 0.2f);
-					newFrame.color = debugColor;
+					newFrame.color = templateFrame.color;
 
 					var frameRT = newFrame.rectTransform;
 					frameRT.anchorMin = firstFrameRT.anchorMin;
