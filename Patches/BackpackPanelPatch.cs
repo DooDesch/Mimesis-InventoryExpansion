@@ -40,7 +40,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Initialize scene change handler if not already done
 				BackpackSceneChangeHandler.Initialize();
 
 				if (_backpackPanel != null)
@@ -61,7 +60,6 @@ namespace InventoryExpansion.Patches
 				MelonLogger.Error("[InventoryExpansion][BackpackPanel] Failed to create backpack panel: " + ex);
 			}
 		}
-
 
 		private static void CreateRoot()
 		{
@@ -196,7 +194,6 @@ namespace InventoryExpansion.Patches
 			}
 		}
 
-
 		internal static void ToggleBackpack()
 		{
 			if (_backpackPanel == null)
@@ -209,7 +206,6 @@ namespace InventoryExpansion.Patches
 				return;
 			}
 
-			// Hide backpack if game is paused (ESC menu open)
 			if (IsGamePaused())
 			{
 				return;
@@ -242,16 +238,13 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				// Check if time is scaled (game is paused)
 				if (Time.timeScale <= 0.01f)
 				{
 					return true;
 				}
 				
-				// Also check if cursor is unlocked (usually means menu is open)
 				if (Cursor.lockState == CursorLockMode.None && Cursor.visible)
 				{
-					// But make sure we're actually in game, not just at title screen
 					if (IsInGame())
 					{
 						return true;
@@ -422,7 +415,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Find an existing TMP_Text to get the correct type
 				Type textComponentType = null;
 				TMP_FontAsset fontToUse = null;
 				try
@@ -448,7 +440,6 @@ namespace InventoryExpansion.Patches
 
 				if (textComponentType == null)
 				{
-					// Fallback to TextMeshProUGUI if available
 					textComponentType = typeof(TMP_Text);
 				}
 
@@ -460,7 +451,6 @@ namespace InventoryExpansion.Patches
 				}
 
 				textGO.transform.SetParent(parent.transform, false);
-				// Make sure text is rendered on top by setting it as last sibling
 				textGO.transform.SetAsLastSibling();
 				
 				_keyHintText = textGO.AddComponent(textComponentType) as TMP_Text;
@@ -471,7 +461,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Set font first
 				if (fontToUse != null)
 				{
 					_keyHintText.font = fontToUse;
@@ -486,16 +475,15 @@ namespace InventoryExpansion.Patches
 				}
 
 				_keyHintText.text = InventoryExpansionPreferences.BackpackKey.ToString();
-				_keyHintText.fontSize = 24f; // Larger font size for better visibility
+				_keyHintText.fontSize = 24f;
 				_keyHintText.alignment = TextAlignmentOptions.Center;
-				_keyHintText.color = new Color(1f, 1f, 1f, 1f); // White color for maximum visibility
+				_keyHintText.color = new Color(1f, 1f, 1f, 1f);
 				_keyHintText.fontStyle = FontStyles.Bold;
 				
-				// Add outline for better visibility on any background
 				var outline = textGO.AddComponent<Outline>();
 				if (outline != null)
 				{
-					outline.effectColor = new Color(0f, 0f, 0f, 1f); // Black outline
+					outline.effectColor = new Color(0f, 0f, 0f, 1f);
 					outline.effectDistance = new Vector2(2f, 2f);
 				}
 				
@@ -506,15 +494,13 @@ namespace InventoryExpansion.Patches
 				}
 
 				var textRT = _keyHintText.rectTransform;
-				// Anchor at top of panel
 				textRT.anchorMin = new Vector2(0.5f, 1f);
 				textRT.anchorMax = new Vector2(0.5f, 1f);
 				textRT.pivot = new Vector2(0.5f, 0.5f);
-				textRT.sizeDelta = new Vector2(60f, 35f); // Larger size for better visibility
-				textRT.anchoredPosition = new Vector2(0f, -95f); // Positioned ~95px from top of backpack
+				textRT.sizeDelta = new Vector2(60f, 35f);
+				textRT.anchoredPosition = new Vector2(0f, -95f);
 				
 				_keyHintText.raycastTarget = false;
-				// Keep key hint visible at all times on the backpack
 				_keyHintText.gameObject.SetActive(true);
 				
 				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Key hint text created successfully");
@@ -532,14 +518,12 @@ namespace InventoryExpansion.Patches
 			
 			try
 			{
-				// Keep key hint visible at all times on the backpack
 				_keyHintText.gameObject.SetActive(true);
 			}
 			catch
 			{
 			}
 		}
-
 
 		private static (float padding, float paddingTop, float paddingBottom) GetPaddingForSlotCount(int additionalSlots)
 		{
@@ -831,7 +815,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Hide backpack if game is paused (ESC menu open)
 				if (BackpackPanelPatch.IsGamePaused())
 				{
 					if (BackpackPanelPatch.IsBackpackFullyVisible)
@@ -1036,7 +1019,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Hide backpack when scene changes (e.g., returning to title screen)
 				if (!IsInGame())
 				{
 					HideBackpack();
@@ -1100,7 +1082,6 @@ namespace InventoryExpansion.Patches
 			}
 			else
 			{
-				// Hide the panel completely if it exists
 				BackpackPanelPatch.HideBackpackCompletely();
 			}
 		}
