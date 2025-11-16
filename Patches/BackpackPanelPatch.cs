@@ -209,6 +209,12 @@ namespace InventoryExpansion.Patches
 				return;
 			}
 
+			// Hide backpack if game is paused (ESC menu open)
+			if (IsGamePaused())
+			{
+				return;
+			}
+
 			bool targetVisible = !_backpackFullyVisible;
 			
 			if (_animationCoroutine != null)
@@ -230,6 +236,34 @@ namespace InventoryExpansion.Patches
 			}
 			
 			_animationCoroutine = MelonCoroutines.Start(AnimateBackpackVisibility(targetVisible));
+		}
+
+		internal static bool IsGamePaused()
+		{
+			try
+			{
+				// Check if time is scaled (game is paused)
+				if (Time.timeScale <= 0.01f)
+				{
+					return true;
+				}
+				
+				// Also check if cursor is unlocked (usually means menu is open)
+				if (Cursor.lockState == CursorLockMode.None && Cursor.visible)
+				{
+					// But make sure we're actually in game, not just at title screen
+					if (IsInGame())
+					{
+						return true;
+					}
+				}
+				
+				return false;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		internal static bool IsInGame()
@@ -390,6 +424,7 @@ namespace InventoryExpansion.Patches
 
 				// Find an existing TMP_Text to get the correct type
 				Type textComponentType = null;
+				TMP_FontAsset fontToUse = null;
 				try
 				{
 					var allTexts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None);
@@ -400,6 +435,7 @@ namespace InventoryExpansion.Patches
 							if (text != null && !text.Equals(null) && text.font != null)
 							{
 								textComponentType = text.GetType();
+								fontToUse = text.font;
 								break;
 							}
 						}
@@ -424,6 +460,8 @@ namespace InventoryExpansion.Patches
 				}
 
 				textGO.transform.SetParent(parent.transform, false);
+				// Make sure text is rendered on top by setting it as last sibling
+				textGO.transform.SetAsLastSibling();
 				
 				_keyHintText = textGO.AddComponent(textComponentType) as TMP_Text;
 				if (_keyHintText == null)
@@ -433,39 +471,32 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				_keyHintText.text = InventoryExpansionPreferences.BackpackKey.ToString();
-				_keyHintText.fontSize = 18f;
-				_keyHintText.alignment = TextAlignmentOptions.Center;
-				_keyHintText.color = new Color(0.15f, 0.15f, 0.15f, 1f);
-				_keyHintText.fontStyle = FontStyles.Bold;
-				
-				try
+				// Set font first
+				if (fontToUse != null)
 				{
-					var allTexts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None);
-					if (allTexts != null && allTexts.Length > 0)
-					{
-						foreach (var text in allTexts)
-						{
-							if (text != null && !text.Equals(null) && text.font != null)
-							{
-								_keyHintText.font = text.font;
-								break;
-							}
-						}
-					}
+					_keyHintText.font = fontToUse;
 				}
-				catch (Exception ex)
-				{
-					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Error finding font: {ex}");
-				}
-				
-				if (_keyHintText.font == null)
+				else
 				{
 					var defaultFont = TMPro.TMP_Settings.defaultFontAsset;
 					if (defaultFont != null)
 					{
 						_keyHintText.font = defaultFont;
 					}
+				}
+
+				_keyHintText.text = InventoryExpansionPreferences.BackpackKey.ToString();
+				_keyHintText.fontSize = 24f; // Larger font size for better visibility
+				_keyHintText.alignment = TextAlignmentOptions.Center;
+				_keyHintText.color = new Color(1f, 1f, 1f, 1f); // White color for maximum visibility
+				_keyHintText.fontStyle = FontStyles.Bold;
+				
+				// Add outline for better visibility on any background
+				var outline = textGO.AddComponent<Outline>();
+				if (outline != null)
+				{
+					outline.effectColor = new Color(0f, 0f, 0f, 1f); // Black outline
+					outline.effectDistance = new Vector2(2f, 2f);
 				}
 				
 				if (_keyHintText.rectTransform == null)
@@ -475,19 +506,22 @@ namespace InventoryExpansion.Patches
 				}
 
 				var textRT = _keyHintText.rectTransform;
+				// Anchor at top of panel
 				textRT.anchorMin = new Vector2(0.5f, 1f);
 				textRT.anchorMax = new Vector2(0.5f, 1f);
 				textRT.pivot = new Vector2(0.5f, 0.5f);
-				textRT.sizeDelta = new Vector2(40f, 25f);
-				textRT.anchoredPosition = new Vector2(0f, -45f);
+				textRT.sizeDelta = new Vector2(60f, 35f); // Larger size for better visibility
+				textRT.anchoredPosition = new Vector2(0f, -95f); // Positioned ~95px from top of backpack
 				
 				_keyHintText.raycastTarget = false;
 				// Keep key hint visible at all times on the backpack
 				_keyHintText.gameObject.SetActive(true);
+				
+				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Key hint text created successfully");
 			}
 			catch (Exception ex)
 			{
-				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Failed to create key hint text: {ex}");
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Failed to create key hint text: {ex}");
 				_keyHintText = null;
 			}
 		}
@@ -794,6 +828,21 @@ namespace InventoryExpansion.Patches
 
 				if (!__instance.AmIAvatar())
 				{
+					return;
+				}
+
+				// Hide backpack if game is paused (ESC menu open)
+				if (BackpackPanelPatch.IsGamePaused())
+				{
+					if (BackpackPanelPatch.IsBackpackFullyVisible)
+					{
+						BackpackPanelPatch.ToggleBackpack();
+					}
+					else
+					{
+						BackpackPanelPatch.HideBackpackCompletely();
+					}
+					wasKeyPressedLastFrame = false;
 					return;
 				}
 
