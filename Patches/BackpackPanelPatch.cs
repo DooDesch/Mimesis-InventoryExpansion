@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using InventoryExpansion.Config;
@@ -20,6 +21,7 @@ namespace InventoryExpansion.Patches
 		private static RectTransform _backpackPanel;
 		private static bool _slotsMoved = false;
 		private static bool _backpackVisible = false;
+		private static Sprite _backpackSprite;
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIPrefab_Inventory), "Awake")]
@@ -101,7 +103,19 @@ namespace InventoryExpansion.Patches
 			panelObj.transform.SetParent(_canvasObj.transform, false);
 
 			var image = panelObj.AddComponent<Image>();
-			image.color = new Color(0f, 0f, 0f, 0.8f);
+			
+			LoadBackpackSprite();
+			if (_backpackSprite != null)
+			{
+				image.sprite = _backpackSprite;
+				image.type = Image.Type.Simple;
+				image.preserveAspect = false;
+			}
+			else
+			{
+				image.color = new Color(0f, 0f, 0f, 0.8f);
+			}
+			
 			image.raycastTarget = false;
 
 			_backpackPanel = panelObj.GetComponent<RectTransform>();
@@ -110,6 +124,58 @@ namespace InventoryExpansion.Patches
 			_backpackPanel.pivot = new Vector2(1f, 0f);
 			_backpackPanel.sizeDelta = new Vector2(450f, 200f);
 			_backpackPanel.anchoredPosition = new Vector2(-40f, 40f);
+		}
+
+		private static void LoadBackpackSprite()
+		{
+			try
+			{
+				string assetsPath = Path.Combine(Path.GetDirectoryName(typeof(BackpackPanelPatch).Assembly.Location), "Assets", "Backpack.png");
+				if (!File.Exists(assetsPath))
+				{
+					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Backpack asset not found at: {assetsPath}");
+					return;
+				}
+
+				byte[] fileData = File.ReadAllBytes(assetsPath);
+				Texture2D texture = new Texture2D(2, 2);
+				
+				bool loaded = false;
+				try
+				{
+					loaded = texture.LoadImage(fileData);
+				}
+				catch
+				{
+					try
+					{
+						loaded = UnityEngine.ImageConversion.LoadImage(texture, fileData);
+					}
+					catch
+					{
+					}
+				}
+				
+				if (!loaded)
+				{
+					MelonLogger.Error("[InventoryExpansion][BackpackPanel] Failed to load Backpack.png as texture");
+					UnityEngine.Object.Destroy(texture);
+					return;
+				}
+
+				_backpackSprite = Sprite.Create(
+					texture,
+					new Rect(0, 0, texture.width, texture.height),
+					new Vector2(0.5f, 0.5f),
+					100f
+				);
+
+				MelonLogger.Msg($"[InventoryExpansion][BackpackPanel] Loaded Backpack sprite: {texture.width}x{texture.height}");
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Failed to load Backpack sprite: {ex}");
+			}
 		}
 
 
@@ -167,7 +233,7 @@ namespace InventoryExpansion.Patches
 				float frameWidth = firstFrameRT.sizeDelta.x;
 				float frameHeight = firstFrameRT.sizeDelta.y;
 				
-				const float scaleFactor = 0.75f;
+				const float scaleFactor = 0.5f;
 				frameWidth *= scaleFactor;
 				frameHeight *= scaleFactor;
 				
@@ -220,8 +286,14 @@ namespace InventoryExpansion.Patches
 
 				int rows = Mathf.CeilToInt((float)additionalSlots / slotsPerRow);
 
-				float panelWidth = slotsPerRow * frameWidth + (slotsPerRow + 1) * slotSpacing;
-				float panelHeight = rows * frameHeight + (rows + 1) * slotSpacing;
+				float slotsAreaWidth = slotsPerRow * frameWidth + (slotsPerRow + 1) * slotSpacing;
+				float slotsAreaHeight = rows * frameHeight + (rows + 1) * slotSpacing;
+				
+				const float padding = 200f;
+				const float paddingTop = 240f;
+				const float paddingBottom = 180f;
+				float panelWidth = slotsAreaWidth + padding * 2f;
+				float panelHeight = slotsAreaHeight + paddingTop + paddingBottom;
 				_backpackPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
 
 				var imageField = slotType.GetField("image", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -258,8 +330,10 @@ namespace InventoryExpansion.Patches
 					containerRT.anchorMax = new Vector2(0f, 1f);
 					containerRT.pivot = new Vector2(0f, 1f);
 
-					float x = slotSpacing + col * (frameWidth + slotSpacing);
-					float y = -(slotSpacing + row * (frameHeight + slotSpacing));
+					const float slotPaddingHorizontal = 200f;
+					const float slotPaddingTop = 320f;
+					float x = slotPaddingHorizontal + slotSpacing + col * (frameWidth + slotSpacing);
+					float y = -(slotPaddingTop + slotSpacing + row * (frameHeight + slotSpacing));
 					containerRT.anchoredPosition = new Vector2(x, y);
 					containerRT.sizeDelta = new Vector2(frameWidth, frameHeight);
 					

@@ -41,6 +41,9 @@
 		<Reference Include="UnityEngine.InputLegacyModule">
 			<HintPath>$(GameManagedPath)/UnityEngine.InputLegacyModule.dll</HintPath>
 		</Reference>
+		<Reference Include="UnityEngine.ImageConversionModule">
+			<HintPath>$(GameManagedPath)/UnityEngine.ImageConversionModule.dll</HintPath>
+		</Reference>
 		<Reference Include="Unity.InputSystem">
 			<HintPath>$(GameManagedPath)/Unity.InputSystem.dll</HintPath>
 		</Reference>
@@ -69,6 +72,12 @@
 		<Compile Include="Patches\BackpackPanelPatch.cs" />
 		<Compile Include="Patches\InventorySelectionPatches.cs" />
 	</ItemGroup>
+	
+	<ItemGroup>
+		<None Include="Assets\Backpack.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 	<!-- Uncomment to use MimicAPI -->
 	<!-- <ItemGroup>
 		<ProjectReference Include="$(MimicAPIPath)/MimicAPI.csproj">
@@ -85,6 +94,7 @@
 
 	<Target Name="PostBuild" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
 		<Exec Condition="Exists('$(ModsDirectory)')" Command="cmd /c if exist &quot;$(ModsDirectory)&quot; copy /Y &quot;$(TargetPath)&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" />
+		<Exec Condition="Exists('$(ModsDirectory)') And Exists('$(TargetDir)Assets\Backpack.png')" Command="cmd /c if not exist &quot;$(ModsDirectory)\Assets&quot; mkdir &quot;$(ModsDirectory)\Assets&quot; &amp;&amp; copy /Y &quot;$(TargetDir)Assets\Backpack.png&quot; &quot;$(ModsDirectory)\Assets\Backpack.png&quot;" ContinueOnError="true" />
 		<!-- Uncomment to copy MimicAPI.dll automatically -->
 		<!-- <Exec Condition="Exists('$(ModsDirectory)') And Exists('$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll')" Command="cmd /c copy /Y &quot;$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" /> -->
 		<!-- Uncomment to auto-start game after build (only if not already running) -->
