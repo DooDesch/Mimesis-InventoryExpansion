@@ -289,9 +289,26 @@ namespace InventoryExpansion.Patches
 				float slotsAreaWidth = slotsPerRow * frameWidth + (slotsPerRow + 1) * slotSpacing;
 				float slotsAreaHeight = rows * frameHeight + (rows + 1) * slotSpacing;
 				
-				const float padding = 200f;
-				const float paddingTop = 240f;
-				const float paddingBottom = 180f;
+				float padding, paddingTop, paddingBottom;
+				if (additionalSlots == 4)
+				{
+					padding = 90f;
+					paddingTop = 130f;
+					paddingBottom = 90f;
+				}
+				else if (additionalSlots == 9)
+				{
+					padding = 160f;
+					paddingTop = 200f;
+					paddingBottom = 140f;
+				}
+				else
+				{
+					padding = 200f;
+					paddingTop = 240f;
+					paddingBottom = 180f;
+				}
+				
 				float panelWidth = slotsAreaWidth + padding * 2f;
 				float panelHeight = slotsAreaHeight + paddingTop + paddingBottom;
 				_backpackPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
@@ -330,8 +347,23 @@ namespace InventoryExpansion.Patches
 					containerRT.anchorMax = new Vector2(0f, 1f);
 					containerRT.pivot = new Vector2(0f, 1f);
 
-					const float slotPaddingHorizontal = 200f;
-					const float slotPaddingTop = 320f;
+					float slotPaddingHorizontal, slotPaddingTop;
+					if (additionalSlots == 4)
+					{
+						slotPaddingHorizontal = 90f;
+						slotPaddingTop = 170f;
+					}
+					else if (additionalSlots == 9)
+					{
+						slotPaddingHorizontal = 160f;
+						slotPaddingTop = 260f;
+					}
+					else
+					{
+						slotPaddingHorizontal = 200f;
+						slotPaddingTop = 320f;
+					}
+					
 					float x = slotPaddingHorizontal + slotSpacing + col * (frameWidth + slotSpacing);
 					float y = -(slotPaddingTop + slotSpacing + row * (frameHeight + slotSpacing));
 					containerRT.anchoredPosition = new Vector2(x, y);
