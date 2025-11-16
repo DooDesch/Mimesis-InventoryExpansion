@@ -12,6 +12,7 @@ namespace InventoryExpansion.Config
 		private static MelonPreferences_Entry<bool> _enabled;
 		private static MelonPreferences_Entry<int> _additionalSlots;
 		private static MelonPreferences_Entry<string> _backpackKey;
+		private static MelonPreferences_Entry<bool> _reduceMovementSpeed;
 
 		internal static void Initialize()
 		{
@@ -33,6 +34,12 @@ namespace InventoryExpansion.Config
 				"C",
 				"Backpack Toggle Key",
 				"Key to toggle backpack visibility. Press to switch between standard inventory and backpack."
+			);
+			_reduceMovementSpeed = CreateEntry(
+				"ReduceMovementSpeed",
+				true,
+				"Reduce Movement Speed",
+				"When enabled, player movement speed is reduced to 50% while the backpack is fully open."
 			);
 		}
 
@@ -112,6 +119,8 @@ namespace InventoryExpansion.Config
 				return KeyCode.C;
 			}
 		}
+
+		internal static bool ReduceMovementSpeed => _reduceMovementSpeed?.Value ?? true;
 	}
 }
 

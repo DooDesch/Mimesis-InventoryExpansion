@@ -5,6 +5,7 @@ using System.Reflection;
 using HarmonyLib;
 using InventoryExpansion.Config;
 using MelonLoader;
+using Mimic;
 using Mimic.Actors;
 using TMPro;
 using UnityEngine;
@@ -20,8 +21,12 @@ namespace InventoryExpansion.Patches
 		private static GameObject _canvasObj;
 		private static RectTransform _backpackPanel;
 		private static bool _slotsMoved = false;
-		private static bool _backpackVisible = false;
+		private static bool _backpackFullyVisible = false;
 		private static Sprite _backpackSprite;
+		private static object _animationCoroutine;
+		private static float _panelHeight = 0f;
+		private static float _initialPanelY = 0f;
+		private static TMP_Text _keyHintText;
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIPrefab_Inventory), "Awake")]
@@ -46,14 +51,13 @@ namespace InventoryExpansion.Patches
 				CreateRoot();
 				CreateUI();
 				MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
-
-				SetBackpackVisibility(false);
 			}
 			catch (Exception ex)
 			{
 				MelonLogger.Error("[InventoryExpansion][BackpackPanel] Failed to create backpack panel: " + ex);
 			}
 		}
+
 
 		private static void CreateRoot()
 		{
@@ -121,6 +125,19 @@ namespace InventoryExpansion.Patches
 			_backpackPanel.pivot = new Vector2(1f, 0f);
 			_backpackPanel.sizeDelta = new Vector2(450f, 200f);
 			_backpackPanel.anchoredPosition = new Vector2(-40f, 40f);
+			_initialPanelY = 40f;
+
+			try
+			{
+				CreateKeyHintText(panelObj);
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Failed to create key hint text during UI creation: {ex}");
+			}
+			
+			_backpackFullyVisible = false;
+			_backpackPanel.gameObject.SetActive(true);
 		}
 
 		private static void LoadBackpackSprite()
@@ -176,15 +193,277 @@ namespace InventoryExpansion.Patches
 		}
 
 
-		internal static void SetBackpackVisibility(bool visible)
+		internal static void ToggleBackpack()
 		{
-			if (_backpackPanel == null) return;
+			if (_backpackPanel == null)
+			{
+				return;
+			}
 
-			_backpackVisible = visible;
-			_backpackPanel.gameObject.SetActive(visible);
+			if (IsInLoadingScreen())
+			{
+				return;
+			}
+
+			bool targetVisible = !_backpackFullyVisible;
+			
+			if (_animationCoroutine != null)
+			{
+				MelonCoroutines.Stop(_animationCoroutine);
+				_animationCoroutine = null;
+			}
+			
+			_backpackPanel.gameObject.SetActive(true);
+			
+			if (_panelHeight == 0f)
+			{
+				_panelHeight = _backpackPanel.sizeDelta.y;
+			}
+			
+			if (_initialPanelY == 0f)
+			{
+				_initialPanelY = 40f;
+			}
+			
+			_animationCoroutine = MelonCoroutines.Start(AnimateBackpackVisibility(targetVisible));
 		}
 
-		internal static bool IsBackpackVisible => _backpackVisible;
+		internal static bool IsInGame()
+		{
+			try
+			{
+				var hub = Hub.s;
+				if (hub == null)
+				{
+					return false;
+				}
+
+				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				ProtoActor protoActor = null;
+
+				if (protoActorField == null)
+				{
+					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					foreach (var field in allFields)
+					{
+						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
+						{
+							protoActor = field.GetValue(hub) as ProtoActor;
+							if (protoActor != null && protoActor.AmIAvatar())
+							{
+								return true;
+							}
+						}
+					}
+					return false;
+				}
+
+				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				if (protoActor == null)
+				{
+					return false;
+				}
+
+				bool isAvatar = protoActor.AmIAvatar();
+				return isAvatar;
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] IsInGame check failed: {ex}");
+				return false;
+			}
+		}
+
+		private static bool IsInLoadingScreen()
+		{
+			try
+			{
+				var hub = Hub.s;
+				if (hub == null)
+				{
+					return true;
+				}
+
+				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				if (protoActorField == null)
+				{
+					return false;
+				}
+
+				var protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				if (protoActor == null)
+				{
+					return true;
+				}
+
+				return !protoActor.AmIAvatar();
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		internal static bool IsBackpackFullyVisible => _backpackFullyVisible;
+
+		private static IEnumerator AnimateBackpackVisibility(bool targetVisible)
+		{
+			if (_backpackPanel == null) yield break;
+			
+			if (_panelHeight == 0f)
+			{
+				_panelHeight = _backpackPanel.sizeDelta.y;
+			}
+			
+			if (_initialPanelY == 0f)
+			{
+				_initialPanelY = 40f;
+			}
+			
+			float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
+			float visibleY = _initialPanelY;
+			
+			Vector2 startPos = _backpackPanel.anchoredPosition;
+			Vector2 targetPos = targetVisible ? new Vector2(startPos.x, visibleY) : new Vector2(startPos.x, hiddenY);
+			
+			float distance = Mathf.Abs(startPos.y - targetPos.y);
+			if (distance < 1f)
+			{
+				_backpackFullyVisible = targetVisible;
+				UpdateKeyHintVisibility();
+				_animationCoroutine = null;
+				yield break;
+			}
+			
+			const float animationDuration = 0.3f;
+			float elapsed = 0f;
+			
+			_backpackPanel.gameObject.SetActive(true);
+			
+			while (elapsed < animationDuration)
+			{
+				if (_backpackPanel == null || _backpackPanel.gameObject == null)
+				{
+					yield break;
+				}
+				
+				elapsed += Time.deltaTime;
+				float t = Mathf.Clamp01(elapsed / animationDuration);
+				t = 1f - Mathf.Pow(1f - t, 3f);
+				
+				_backpackPanel.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
+				UpdateKeyHintVisibility();
+				yield return null;
+			}
+			
+			if (_backpackPanel != null && _backpackPanel.gameObject != null)
+			{
+				_backpackPanel.anchoredPosition = targetPos;
+				_backpackFullyVisible = targetVisible;
+				UpdateKeyHintVisibility();
+			}
+			
+			_animationCoroutine = null;
+		}
+
+		private static void CreateKeyHintText(GameObject parent)
+		{
+			try
+			{
+				if (parent == null)
+				{
+					MelonLogger.Warning("[InventoryExpansion][BackpackPanel] Cannot create key hint text: parent is null");
+					return;
+				}
+
+				var textGO = new GameObject("InventoryExpansion_KeyHint");
+				if (textGO == null)
+				{
+					MelonLogger.Warning("[InventoryExpansion][BackpackPanel] Failed to create key hint GameObject");
+					return;
+				}
+
+				textGO.transform.SetParent(parent.transform, false);
+				
+				_keyHintText = textGO.AddComponent<TMP_Text>();
+				if (_keyHintText == null)
+				{
+					MelonLogger.Warning("[InventoryExpansion][BackpackPanel] Failed to add TMP_Text component");
+					UnityEngine.Object.Destroy(textGO);
+					return;
+				}
+
+				_keyHintText.text = InventoryExpansionPreferences.BackpackKey.ToString();
+				_keyHintText.fontSize = 18f;
+				_keyHintText.alignment = TextAlignmentOptions.Center;
+				_keyHintText.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+				_keyHintText.fontStyle = FontStyles.Bold;
+				
+				try
+				{
+					var allTexts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None);
+					if (allTexts != null && allTexts.Length > 0)
+					{
+						foreach (var text in allTexts)
+						{
+							if (text != null && !text.Equals(null) && text.font != null)
+							{
+								_keyHintText.font = text.font;
+								break;
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Error finding font: {ex}");
+				}
+				
+				if (_keyHintText.font == null)
+				{
+					var defaultFont = TMPro.TMP_Settings.defaultFontAsset;
+					if (defaultFont != null)
+					{
+						_keyHintText.font = defaultFont;
+					}
+				}
+				
+				if (_keyHintText.rectTransform == null)
+				{
+					MelonLogger.Warning("[InventoryExpansion][BackpackPanel] Key hint text has no RectTransform");
+					return;
+				}
+
+				var textRT = _keyHintText.rectTransform;
+				textRT.anchorMin = new Vector2(0.5f, 1f);
+				textRT.anchorMax = new Vector2(0.5f, 1f);
+				textRT.pivot = new Vector2(0.5f, 0.5f);
+				textRT.sizeDelta = new Vector2(40f, 25f);
+				textRT.anchoredPosition = new Vector2(0f, -45f);
+				
+				_keyHintText.raycastTarget = false;
+				_keyHintText.gameObject.SetActive(false);
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Failed to create key hint text: {ex}");
+				_keyHintText = null;
+			}
+		}
+
+		private static void UpdateKeyHintVisibility()
+		{
+			if (_keyHintText == null || _keyHintText.gameObject == null) return;
+			
+			try
+			{
+				_keyHintText.gameObject.SetActive(!_backpackFullyVisible);
+			}
+			catch
+			{
+			}
+		}
+
 
 		private static (float padding, float paddingTop, float paddingBottom) GetPaddingForSlotCount(int additionalSlots)
 		{
@@ -434,6 +713,18 @@ namespace InventoryExpansion.Patches
 				}
 
 				_slotsMoved = true;
+				_panelHeight = _backpackPanel.sizeDelta.y;
+				
+				if (_initialPanelY == 0f)
+				{
+					_initialPanelY = 40f;
+				}
+				
+				float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
+				_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
+				_backpackFullyVisible = false;
+				UpdateKeyHintVisibility();
+				
 				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}", 
 					additionalSlots, _backpackPanel.sizeDelta);
 			}
@@ -490,13 +781,148 @@ namespace InventoryExpansion.Patches
 
 				if (wasKeyPressedThisFrame)
 				{
-					bool currentVisibility = BackpackPanelPatch.IsBackpackVisible;
-					BackpackPanelPatch.SetBackpackVisibility(!currentVisibility);
+					BackpackPanelPatch.ToggleBackpack();
 				}
 			}
 			catch (Exception ex)
 			{
 				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Update postfix failed: {ex}");
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(ProtoActor))]
+	internal static class BackpackMovementSpeedPatch
+	{
+		private static FieldInfo _netSyncActorDataField;
+		private static bool _fieldInitialized = false;
+		private static long _originalMoveSpeedWalk = 0L;
+		private static long _originalMoveSpeedRun = 0L;
+		private static bool _speedReduced = false;
+
+		[HarmonyPostfix]
+		[HarmonyPatch("Update")]
+		private static void Update_Postfix(ProtoActor __instance)
+		{
+			try
+			{
+				if (!InventoryExpansionPreferences.Enabled)
+				{
+					RestoreMoveSpeed(__instance);
+					return;
+				}
+
+				if (!__instance.AmIAvatar())
+				{
+					return;
+				}
+
+				if (!_fieldInitialized)
+				{
+					var protoActorType = typeof(ProtoActor);
+					_netSyncActorDataField = protoActorType.GetField("netSyncActorData", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					_fieldInitialized = true;
+				}
+
+				if (_netSyncActorDataField == null)
+				{
+					return;
+				}
+
+				var netSyncActorData = _netSyncActorDataField.GetValue(__instance);
+				if (netSyncActorData == null)
+				{
+					return;
+				}
+
+				var moveSpeedWalkField = netSyncActorData.GetType().GetField("MoveSpeedWalk", BindingFlags.Instance | BindingFlags.Public);
+				var moveSpeedRunField = netSyncActorData.GetType().GetField("MoveSpeedRun", BindingFlags.Instance | BindingFlags.Public);
+
+				if (moveSpeedWalkField == null || moveSpeedRunField == null)
+				{
+					return;
+				}
+
+				if (BackpackPanelPatch.IsBackpackFullyVisible && InventoryExpansionPreferences.ReduceMovementSpeed)
+				{
+					if (!_speedReduced)
+					{
+						_originalMoveSpeedWalk = (long)(moveSpeedWalkField.GetValue(netSyncActorData) ?? 350L);
+						_originalMoveSpeedRun = (long)(moveSpeedRunField.GetValue(netSyncActorData) ?? 700L);
+						_speedReduced = true;
+					}
+
+					moveSpeedWalkField.SetValue(netSyncActorData, (long)(_originalMoveSpeedWalk * 0.5f));
+					moveSpeedRunField.SetValue(netSyncActorData, (long)(_originalMoveSpeedRun * 0.5f));
+				}
+				else
+				{
+					RestoreMoveSpeed(netSyncActorData, moveSpeedWalkField, moveSpeedRunField);
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][Movement] Movement speed patch failed: {ex}");
+			}
+		}
+
+		private static void RestoreMoveSpeed(ProtoActor instance)
+		{
+			if (!_speedReduced || _netSyncActorDataField == null)
+			{
+				return;
+			}
+
+			var netSyncActorData = _netSyncActorDataField.GetValue(instance);
+			if (netSyncActorData == null)
+			{
+				return;
+			}
+
+			var moveSpeedWalkField = netSyncActorData.GetType().GetField("MoveSpeedWalk", BindingFlags.Instance | BindingFlags.Public);
+			var moveSpeedRunField = netSyncActorData.GetType().GetField("MoveSpeedRun", BindingFlags.Instance | BindingFlags.Public);
+
+			if (moveSpeedWalkField != null && moveSpeedRunField != null)
+			{
+				RestoreMoveSpeed(netSyncActorData, moveSpeedWalkField, moveSpeedRunField);
+			}
+		}
+
+		private static void RestoreMoveSpeed(object netSyncActorData, FieldInfo moveSpeedWalkField, FieldInfo moveSpeedRunField)
+		{
+			if (_speedReduced && _originalMoveSpeedWalk > 0L && _originalMoveSpeedRun > 0L)
+			{
+				moveSpeedWalkField.SetValue(netSyncActorData, _originalMoveSpeedWalk);
+				moveSpeedRunField.SetValue(netSyncActorData, _originalMoveSpeedRun);
+				_speedReduced = false;
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(ProtoActor), "OnDestroy")]
+	internal static class BackpackProtoActorDestroyPatch
+	{
+		[HarmonyPostfix]
+		private static void OnDestroy_Postfix(ProtoActor __instance)
+		{
+			try
+			{
+				if (!InventoryExpansionPreferences.Enabled)
+				{
+					return;
+				}
+
+				if (__instance.AmIAvatar())
+				{
+					if (BackpackPanelPatch.IsBackpackFullyVisible)
+					{
+						BackpackPanelPatch.ToggleBackpack();
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] ProtoActor OnDestroy patch failed: {ex}");
 			}
 		}
 	}

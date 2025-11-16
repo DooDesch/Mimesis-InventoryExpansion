@@ -86,7 +86,7 @@ namespace InventoryExpansion.Patches
 				int currentSlot = (int)(selectedSlotIndexField.GetValue(__instance) ?? 0);
 				int slotSize = (int)(slotSizeField.GetValue(__instance) ?? 4);
 
-				bool isBackpackVisible = BackpackPanelPatch.IsBackpackVisible;
+				bool isBackpackVisible = BackpackPanelPatch.IsBackpackFullyVisible;
 				int minSlot, maxSlot;
 
 				if (isBackpackVisible)
