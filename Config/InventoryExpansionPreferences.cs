@@ -41,10 +41,6 @@ namespace InventoryExpansion.Config
 
 		internal static bool Enabled => _enabled.Value;
 
-		/// <summary>
-		/// Number of additional inventory slots to add on top of the base game value.
-		/// Clamped to a reasonable range to avoid absurd values breaking things.
-		/// </summary>
 		internal static int AdditionalSlots
 		{
 			get

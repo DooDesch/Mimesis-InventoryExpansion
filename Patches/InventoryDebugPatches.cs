@@ -10,19 +10,9 @@ using ReluProtocol.Enum;
 
 namespace InventoryExpansion.Patches
 {
-	/// <summary>
-	/// Debug patches to log how many inventory slots the server and client
-	/// actually see and use. This helps to identify where the 4-slot limit
-	/// is still enforced at runtime.
-	/// </summary>
-	/// <summary>
-	/// Server-side debug patches for InventoryController.
-	/// </summary>
 	[HarmonyPatch]
 	internal static class InventoryDebugControllerPatches
 	{
-		// -------- Server-side: InventoryController --------
-
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(InventoryController), "Initialize")]
 		private static void InventoryController_Initialize_Postfix(InventoryController __instance)
@@ -96,21 +86,13 @@ namespace InventoryExpansion.Patches
 
 	}
 
-	/// <summary>
-	/// Client-side debug patch for ProtoActor.Inventory.ResolveInventoryInfos.
-	/// Separated into its own class so Harmony's TargetMethod pattern doesn't conflict
-	/// with the attribute-based patches above.
-	/// </summary>
 	[HarmonyPatch]
 	internal static class InventoryDebugClientPatches
 	{
-		// We can't reference the nested Inventory type directly by name here because it's an internal nested class.
-		// Instead, we provide a TargetMethod that finds it via reflection.
 		private static MethodBase TargetMethod()
 		{
 			try
 			{
-				// Nested type: Mimic.Actors.ProtoActor+Inventory
 				var inventoryType = typeof(Mimic.Actors.ProtoActor).GetNestedType("Inventory", BindingFlags.Public | BindingFlags.NonPublic);
 				if (inventoryType == null)
 				{
@@ -144,11 +126,9 @@ namespace InventoryExpansion.Patches
 
 				var type = __instance.GetType();
 
-				// slotSize field
 				var slotSizeField = type.GetField("slotSize", BindingFlags.Instance | BindingFlags.NonPublic);
 				int slotSize = (int)(slotSizeField?.GetValue(__instance) ?? 0);
 
-				// slotItems list
 				var slotItemsField = type.GetField("slotItems", BindingFlags.Instance | BindingFlags.NonPublic);
 				var slotItems = slotItemsField?.GetValue(__instance) as IList;
 				int localItemCount = 0;

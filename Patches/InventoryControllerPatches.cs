@@ -7,10 +7,6 @@ using MelonLoader;
 
 namespace InventoryExpansion.Patches
 {
-	/// <summary>
-	/// Extends the internal InventoryController slot dictionary to match the expanded slot count
-	/// and adjusts the InvenFull check to honor the expanded slot count instead of the hardcoded 4.
-	/// </summary>
 	[HarmonyPatch(typeof(InventoryController))]
 	internal static class InventoryControllerPatches
 	{
@@ -27,7 +23,6 @@ namespace InventoryExpansion.Patches
 
 				var hub = Hub.s;
 
-				// Access Hub.gameConfig via reflection (internal field)
 				FieldInfo gameConfigField = typeof(Hub).GetField("gameConfig", BindingFlags.Instance | BindingFlags.NonPublic);
 				object gameConfig = gameConfigField?.GetValue(hub);
 				if (gameConfig == null)
@@ -35,7 +30,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Access GameConfig.playerActor
 				FieldInfo playerActorField = gameConfig.GetType().GetField("playerActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				object playerActor = playerActorField?.GetValue(gameConfig);
 				if (playerActor == null)
@@ -43,7 +37,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Access PlayerActor.maxGenericInventorySlot
 				FieldInfo maxSlotField = playerActor.GetType().GetField("maxGenericInventorySlot", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				if (maxSlotField == null)
 				{
@@ -56,7 +49,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Access private Dictionary<int, ItemElement> _inventorySlots via non-generic IDictionary
 				var field = typeof(InventoryController).GetField("_inventorySlots", BindingFlags.Instance | BindingFlags.NonPublic);
 				if (field == null)
 				{
@@ -70,7 +62,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// Original Initialize adds slots 1..4; we only append missing higher indices.
 				for (int i = 5; i <= maxSlots; i++)
 				{
 					if (!dict.Contains(i))
@@ -87,11 +78,6 @@ namespace InventoryExpansion.Patches
 			}
 		}
 
-		/// <summary>
-		/// Replace the hardcoded "4 slots" InvenFull check with a check based on maxGenericInventorySlot.
-		/// This runs on the server/host side and controls whether HandleGrapLootingObject() will even
-		/// try to add an item.
-		/// </summary>
 		[HarmonyPrefix]
 		[HarmonyPatch("InvenFull")]
 		private static bool InvenFull_Prefix(InventoryController __instance, ref bool __result)
@@ -100,7 +86,6 @@ namespace InventoryExpansion.Patches
 			{
 				if (!InventoryExpansionPreferences.Enabled)
 				{
-					// Let the original logic run unchanged.
 					return true;
 				}
 
@@ -110,7 +95,6 @@ namespace InventoryExpansion.Patches
 					return true;
 				}
 
-				// Access Hub.gameConfig.playerActor.maxGenericInventorySlot
 				FieldInfo gameConfigField = typeof(Hub).GetField("gameConfig", BindingFlags.Instance | BindingFlags.NonPublic);
 				object gameConfig = gameConfigField?.GetValue(hub);
 				FieldInfo playerActorField = gameConfig?.GetType().GetField("playerActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -119,11 +103,10 @@ namespace InventoryExpansion.Patches
 
 				int maxSlots = (int)(maxSlotField?.GetValue(playerActor) ?? 4);
 
-				// Access _inventorySlots and count non-null entries.
 				var field = typeof(InventoryController).GetField("_inventorySlots", BindingFlags.Instance | BindingFlags.NonPublic);
 				if (field?.GetValue(__instance) is not IDictionary dict)
 				{
-					return true; // fall back to original if something is off
+					return true;
 				}
 
 				int filled = 0;
@@ -136,17 +119,13 @@ namespace InventoryExpansion.Patches
 				}
 
 				__result = filled >= maxSlots;
-				// Skip original method.
 				return false;
 			}
 			catch (Exception ex)
 			{
 				MelonLogger.Error($"InventoryExpansion: InvenFull prefix failed, falling back to original. {ex}");
-				// Let original run on error.
 				return true;
 			}
 		}
 	}
 }
-
-

@@ -6,15 +6,9 @@ using MelonLoader;
 
 namespace InventoryExpansion.Patches
 {
-	/// <summary>
-	/// Adjusts the player inventory slot count early in Hub initialization
-	/// so both the Inventory logic and UI see the expanded size.
-	/// </summary>
 	[HarmonyPatch(typeof(Hub))]
 	internal static class GameConfigPatches
 	{
-		// Ensure we only ever apply the slot expansion once per process,
-		// even if Hub.Awake somehow runs multiple times.
 		private static bool _slotsAlreadyExpanded;
 
 		[HarmonyPostfix]
@@ -33,7 +27,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// gameConfig is an internal field on Hub, so we need reflection to access it
 				FieldInfo gameConfigField = typeof(Hub).GetField("gameConfig", BindingFlags.Instance | BindingFlags.NonPublic);
 				object gameConfig = gameConfigField?.GetValue(__instance);
 				if (gameConfig == null)
@@ -42,7 +35,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// PlayerActor is a nested type field on GameConfig
 				FieldInfo playerActorField = gameConfig.GetType().GetField("playerActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				object playerActor = playerActorField?.GetValue(gameConfig);
 				if (playerActor == null)
@@ -51,7 +43,6 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
-				// maxGenericInventorySlot is an int field on PlayerActor
 				FieldInfo maxSlotField = playerActor.GetType().GetField("maxGenericInventorySlot", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				if (maxSlotField == null)
 				{
@@ -79,5 +70,3 @@ namespace InventoryExpansion.Patches
 		}
 	}
 }
-
-
