@@ -11,6 +11,7 @@ namespace InventoryExpansion.Config
 		private static MelonPreferences_Category _category;
 		private static MelonPreferences_Entry<bool> _enabled;
 		private static MelonPreferences_Entry<int> _additionalSlots;
+		private static MelonPreferences_Entry<string> _backpackKey;
 
 		internal static void Initialize()
 		{
@@ -26,6 +27,12 @@ namespace InventoryExpansion.Config
 				4,
 				"Additional Inventory Slots",
 				"Number of extra inventory slots to add on top of the game's default inventory size."
+			);
+			_backpackKey = CreateEntry(
+				"BackpackKey",
+				"C",
+				"Backpack Toggle Key",
+				"Key to toggle backpack visibility. Press to switch between standard inventory and backpack."
 			);
 		}
 
@@ -63,6 +70,30 @@ namespace InventoryExpansion.Config
 				}
 
 				return value;
+			}
+		}
+
+		internal static KeyCode BackpackKey
+		{
+			get
+			{
+				if (_backpackKey == null)
+				{
+					return KeyCode.C;
+				}
+
+				string keyString = _backpackKey.Value;
+				if (string.IsNullOrEmpty(keyString))
+				{
+					return KeyCode.C;
+				}
+
+				if (Enum.TryParse<KeyCode>(keyString, true, out KeyCode keyCode))
+				{
+					return keyCode;
+				}
+
+				return KeyCode.C;
 			}
 		}
 	}

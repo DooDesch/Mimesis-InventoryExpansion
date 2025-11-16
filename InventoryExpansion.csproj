@@ -38,6 +38,12 @@
 		<Reference Include="UnityEngine.UIModule">
 			<HintPath>$(GameManagedPath)/UnityEngine.UIModule.dll</HintPath>
 		</Reference>
+		<Reference Include="UnityEngine.InputLegacyModule">
+			<HintPath>$(GameManagedPath)/UnityEngine.InputLegacyModule.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.InputSystem">
+			<HintPath>$(GameManagedPath)/Unity.InputSystem.dll</HintPath>
+		</Reference>
 		<Reference Include="MelonLoader">
 			<HintPath>$(MelonLoaderPath)/MelonLoader.dll</HintPath>
 		</Reference>
@@ -61,6 +67,7 @@
 		<Compile Include="Patches\InventoryUiPatches.cs" />
 		<Compile Include="Patches\InventoryDebugPatches.cs" />
 		<Compile Include="Patches\BackpackPanelPatch.cs" />
+		<Compile Include="Patches\InventorySelectionPatches.cs" />
 	</ItemGroup>
 	<!-- Uncomment to use MimicAPI -->
 	<!-- <ItemGroup>

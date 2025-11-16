@@ -4,8 +4,10 @@ using System.Reflection;
 using HarmonyLib;
 using InventoryExpansion.Config;
 using MelonLoader;
+using Mimic.Actors;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace InventoryExpansion.Patches
@@ -17,6 +19,7 @@ namespace InventoryExpansion.Patches
 		private static GameObject _canvasObj;
 		private static RectTransform _backpackPanel;
 		private static bool _slotsMoved = false;
+		private static bool _backpackVisible = false;
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIPrefab_Inventory), "Awake")]
@@ -42,6 +45,7 @@ namespace InventoryExpansion.Patches
 				CreateUI();
 				MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
 
+				SetBackpackVisibility(false);
 				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Created BLACK BACKPACK PANEL at bottom-right.");
 			}
 			catch (Exception ex)
@@ -107,6 +111,17 @@ namespace InventoryExpansion.Patches
 			_backpackPanel.sizeDelta = new Vector2(450f, 200f);
 			_backpackPanel.anchoredPosition = new Vector2(-40f, 40f);
 		}
+
+
+		internal static void SetBackpackVisibility(bool visible)
+		{
+			if (_backpackPanel == null) return;
+
+			_backpackVisible = visible;
+			_backpackPanel.gameObject.SetActive(visible);
+		}
+
+		internal static bool IsBackpackVisible => _backpackVisible;
 
 		private static IEnumerator MoveSlotsToPanelCoroutine(UIPrefab_Inventory inventoryUI)
 		{
@@ -326,6 +341,65 @@ namespace InventoryExpansion.Patches
 			catch (Exception ex)
 			{
 				MelonLogger.Error("[InventoryExpansion][BackpackPanel] Failed to move slots to panel: " + ex);
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(ProtoActor), "Update")]
+	internal static class BackpackInputUpdatePatch
+	{
+		private static bool wasKeyPressedLastFrame = false;
+
+		[HarmonyPostfix]
+		private static void Update_Postfix(ProtoActor __instance)
+		{
+			try
+			{
+				if (!InventoryExpansionPreferences.Enabled)
+				{
+					return;
+				}
+
+				if (!__instance.AmIAvatar())
+				{
+					return;
+				}
+
+				Keyboard keyboard = Keyboard.current;
+				if (keyboard == null)
+				{
+					wasKeyPressedLastFrame = false;
+					return;
+				}
+
+				KeyCode targetKey = InventoryExpansionPreferences.BackpackKey;
+				Key key = Key.None;
+
+				try
+				{
+					key = (Key)Enum.Parse(typeof(Key), targetKey.ToString());
+				}
+				catch
+				{
+					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Could not convert KeyCode {targetKey} to Input System Key");
+					return;
+				}
+
+				bool isKeyPressed = keyboard[key].isPressed;
+				bool wasKeyPressedThisFrame = isKeyPressed && !wasKeyPressedLastFrame;
+				wasKeyPressedLastFrame = isKeyPressed;
+
+				if (wasKeyPressedThisFrame)
+				{
+					bool currentVisibility = BackpackPanelPatch.IsBackpackVisible;
+					MelonLogger.Msg($"[InventoryExpansion][BackpackPanel] Toggle key pressed. Current visibility: {currentVisibility}");
+					BackpackPanelPatch.SetBackpackVisibility(!currentVisibility);
+					MelonLogger.Msg($"[InventoryExpansion][BackpackPanel] New visibility: {!currentVisibility}");
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Update postfix failed: {ex}");
 			}
 		}
 	}
