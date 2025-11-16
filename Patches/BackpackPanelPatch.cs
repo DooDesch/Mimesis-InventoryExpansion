@@ -198,9 +198,26 @@ namespace InventoryExpansion.Patches
 				}
 				
 				float slotSpacing = 10f;
-				const int slotsPerRow = 4;
-
 				int additionalSlots = inventorySlots.Count - 4;
+				
+				int slotsPerRow;
+				if (additionalSlots == 4)
+				{
+					slotsPerRow = 2;
+				}
+				else if (additionalSlots == 9)
+				{
+					slotsPerRow = 3;
+				}
+				else if (additionalSlots == 16)
+				{
+					slotsPerRow = 4;
+				}
+				else
+				{
+					slotsPerRow = Mathf.CeilToInt(Mathf.Sqrt(additionalSlots));
+				}
+
 				int rows = Mathf.CeilToInt((float)additionalSlots / slotsPerRow);
 
 				float panelWidth = slotsPerRow * frameWidth + (slotsPerRow + 1) * slotSpacing;

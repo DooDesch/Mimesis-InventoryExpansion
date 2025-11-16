@@ -26,7 +26,7 @@ namespace InventoryExpansion.Config
 				"AdditionalSlots",
 				4,
 				"Additional Inventory Slots",
-				"Number of extra inventory slots to add on top of the game's default inventory size."
+				"Number of extra inventory slots to add on top of the game's default inventory size. Valid values: 4, 9, or 16 (for square grids: 2x2, 3x3, or 4x4). Other values will be rounded to the nearest valid option."
 			);
 			_backpackKey = CreateEntry(
 				"BackpackKey",
@@ -48,28 +48,44 @@ namespace InventoryExpansion.Config
 
 		internal static bool Enabled => _enabled.Value;
 
+		private static int ClampToValidBackpackSize(int value)
+		{
+			if (value <= 0)
+			{
+				return 4;
+			}
+
+			if (value <= 6)
+			{
+				return 4;
+			}
+
+			if (value <= 12)
+			{
+				return 9;
+			}
+
+			return 16;
+		}
+
 		internal static int AdditionalSlots
 		{
 			get
 			{
 				if (_additionalSlots == null)
 				{
-					return 0;
+					return 4;
 				}
 
 				int value = _additionalSlots.Value;
-				if (value < 0)
+				int clampedValue = ClampToValidBackpackSize(value);
+
+				if (clampedValue != value)
 				{
-					return 0;
+					_additionalSlots.Value = clampedValue;
 				}
 
-				// Hard cap to avoid insane values that could hurt performance or UI layout
-				if (value > 16)
-				{
-					return 16;
-				}
-
-				return value;
+				return clampedValue;
 			}
 		}
 
