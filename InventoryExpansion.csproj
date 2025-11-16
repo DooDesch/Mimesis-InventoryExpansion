@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<RootNamespace>InventoryExpansion</RootNamespace>
+		<LangVersion>latest</LangVersion>
+		<IsPackable>false</IsPackable>
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<AssemblyName>InventoryExpansion</AssemblyName>
+		<WorkspaceLibPath Condition="'$(WorkspaceLibPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib</WorkspaceLibPath>
+		<GameManagedPath Condition="'$(GameManagedPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib/game</GameManagedPath>
+		<MelonLoaderPath Condition="'$(MelonLoaderPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib/melonloader</MelonLoaderPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>$(GameManagedPath)/Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="ReluProtocol">
+			<HintPath>$(GameManagedPath)/ReluProtocol.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.TextMeshPro">
+			<HintPath>$(GameManagedPath)/Unity.TextMeshPro.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(GameManagedPath)/UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine">
+			<HintPath>$(GameManagedPath)/UnityEngine.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UI">
+			<HintPath>$(GameManagedPath)/UnityEngine.UI.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>$(GameManagedPath)/UnityEngine.UIModule.dll</HintPath>
+		</Reference>
+		<Reference Include="MelonLoader">
+			<HintPath>$(MelonLoaderPath)/MelonLoader.dll</HintPath>
+		</Reference>
+		<Reference Include="0Harmony">
+			<HintPath>$(MelonLoaderPath)/0Harmony.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+		<!-- Suppress warnings from MimicAPI dependencies that are not needed at build time -->
+		<NoWarn>MSB3245</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="Core.cs" />
+		<Compile Include="Config\InventoryExpansionPreferences.cs" />
+		<Compile Include="Patches\GameConfigPatches.cs" />
+		<Compile Include="Patches\InventoryControllerPatches.cs" />
+		<Compile Include="Patches\InventoryUiPatches.cs" />
+		<Compile Include="Patches\InventoryDebugPatches.cs" />
+		<Compile Include="Patches\BackpackPanelPatch.cs" />
+	</ItemGroup>
+	<!-- Uncomment to use MimicAPI -->
+	<!-- <ItemGroup>
+		<ProjectReference Include="$(MimicAPIPath)/MimicAPI.csproj">
+			<ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+			<Private>false</Private>
+		</ProjectReference>
+	</ItemGroup> -->
+	
+	<PropertyGroup>
+		<ModsDirectory>F:\Launcher\SteamLibrary\steamapps\common\MIMESIS\Mods</ModsDirectory>
+		<GameExePath>F:\Launcher\SteamLibrary\steamapps\common\MIMESIS\MIMESIS.exe</GameExePath>
+		<MimicAPIPath Condition="'$(MimicAPIPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/MimicAPI</MimicAPIPath>
+	</PropertyGroup>
+
+	<Target Name="PostBuild" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+		<Exec Condition="Exists('$(ModsDirectory)')" Command="cmd /c if exist &quot;$(ModsDirectory)&quot; copy /Y &quot;$(TargetPath)&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" />
+		<!-- Uncomment to copy MimicAPI.dll automatically -->
+		<!-- <Exec Condition="Exists('$(ModsDirectory)') And Exists('$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll')" Command="cmd /c copy /Y &quot;$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" /> -->
+		<!-- Uncomment to auto-start game after build (only if not already running) -->
+		<!-- <Exec Condition="Exists('$(GameExePath)') And '$(GIT_INDEX_FILE)' == ''" Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;if (-not (Get-Process -Name 'MIMESIS' -ErrorAction SilentlyContinue)) { Start-Process -FilePath '$(GameExePath)' }&quot;" ContinueOnError="true" /> -->
+	</Target>
+</Project>
+

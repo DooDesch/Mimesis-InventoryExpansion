@@ -1,0 +1,13 @@
+{
+  "name": "InventoryExpansion",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/DooDesch/Mimesis-InventoryExpansion",
+  "description": "A boilerplate template for Mimesis mods. Replace this with your mod description.",
+  "dependencies": [
+    "LavaGang-MelonLoader-0.7.1"
+  ],
+  "contributors": [
+    "DooDesch"
+  ]
+}
+
