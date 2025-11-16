@@ -10,6 +10,7 @@ using Mimic.Actors;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace InventoryExpansion.Patches
@@ -38,6 +39,9 @@ namespace InventoryExpansion.Patches
 				{
 					return;
 				}
+
+				// Initialize scene change handler if not already done
+				BackpackSceneChangeHandler.Initialize();
 
 				if (_backpackPanel != null)
 				{
@@ -306,6 +310,14 @@ namespace InventoryExpansion.Patches
 
 		internal static bool IsBackpackFullyVisible => _backpackFullyVisible;
 
+		internal static void HideBackpackCompletely()
+		{
+			if (_backpackPanel != null && _backpackPanel.gameObject != null)
+			{
+				_backpackPanel.gameObject.SetActive(false);
+			}
+		}
+
 		private static IEnumerator AnimateBackpackVisibility(bool targetVisible)
 		{
 			if (_backpackPanel == null) yield break;
@@ -376,6 +388,34 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
+				// Find an existing TMP_Text to get the correct type
+				Type textComponentType = null;
+				try
+				{
+					var allTexts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None);
+					if (allTexts != null && allTexts.Length > 0)
+					{
+						foreach (var text in allTexts)
+						{
+							if (text != null && !text.Equals(null) && text.font != null)
+							{
+								textComponentType = text.GetType();
+								break;
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Error finding TMP_Text type: {ex}");
+				}
+
+				if (textComponentType == null)
+				{
+					// Fallback to TextMeshProUGUI if available
+					textComponentType = typeof(TMP_Text);
+				}
+
 				var textGO = new GameObject("InventoryExpansion_KeyHint");
 				if (textGO == null)
 				{
@@ -385,7 +425,7 @@ namespace InventoryExpansion.Patches
 
 				textGO.transform.SetParent(parent.transform, false);
 				
-				_keyHintText = textGO.AddComponent<TMP_Text>();
+				_keyHintText = textGO.AddComponent(textComponentType) as TMP_Text;
 				if (_keyHintText == null)
 				{
 					MelonLogger.Warning("[InventoryExpansion][BackpackPanel] Failed to add TMP_Text component");
@@ -442,7 +482,8 @@ namespace InventoryExpansion.Patches
 				textRT.anchoredPosition = new Vector2(0f, -45f);
 				
 				_keyHintText.raycastTarget = false;
-				_keyHintText.gameObject.SetActive(false);
+				// Keep key hint visible at all times on the backpack
+				_keyHintText.gameObject.SetActive(true);
 			}
 			catch (Exception ex)
 			{
@@ -457,7 +498,8 @@ namespace InventoryExpansion.Patches
 			
 			try
 			{
-				_keyHintText.gameObject.SetActive(!_backpackFullyVisible);
+				// Keep key hint visible at all times on the backpack
+				_keyHintText.gameObject.SetActive(true);
 			}
 			catch
 			{
@@ -914,15 +956,103 @@ namespace InventoryExpansion.Patches
 
 				if (__instance.AmIAvatar())
 				{
-					if (BackpackPanelPatch.IsBackpackFullyVisible)
-					{
-						BackpackPanelPatch.ToggleBackpack();
-					}
+					BackpackSceneChangeHandler.HideBackpack();
 				}
 			}
 			catch (Exception ex)
 			{
 				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] ProtoActor OnDestroy patch failed: {ex}");
+			}
+		}
+	}
+
+	internal static class BackpackSceneChangeHandler
+	{
+		private static bool _initialized = false;
+
+		internal static void Initialize()
+		{
+			if (_initialized) return;
+			
+			SceneManager.activeSceneChanged += OnActiveSceneChanged;
+			_initialized = true;
+		}
+
+		private static void OnActiveSceneChanged(Scene previousScene, Scene newScene)
+		{
+			try
+			{
+				if (!InventoryExpansionPreferences.Enabled)
+				{
+					return;
+				}
+
+				// Hide backpack when scene changes (e.g., returning to title screen)
+				if (!IsInGame())
+				{
+					HideBackpack();
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Scene change handler failed: {ex}");
+			}
+		}
+
+		private static bool IsInGame()
+		{
+			try
+			{
+				var hub = Hub.s;
+				if (hub == null)
+				{
+					return false;
+				}
+
+				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				ProtoActor protoActor = null;
+
+				if (protoActorField == null)
+				{
+					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					foreach (var field in allFields)
+					{
+						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
+						{
+							protoActor = field.GetValue(hub) as ProtoActor;
+							if (protoActor != null && protoActor.AmIAvatar())
+							{
+								return true;
+							}
+						}
+					}
+					return false;
+				}
+
+				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				if (protoActor == null)
+				{
+					return false;
+				}
+
+				return protoActor.AmIAvatar();
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		internal static void HideBackpack()
+		{
+			if (BackpackPanelPatch.IsBackpackFullyVisible)
+			{
+				BackpackPanelPatch.ToggleBackpack();
+			}
+			else
+			{
+				// Hide the panel completely if it exists
+				BackpackPanelPatch.HideBackpackCompletely();
 			}
 		}
 	}

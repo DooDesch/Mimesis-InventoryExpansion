@@ -1,7 +1,7 @@
 using InventoryExpansion.Config;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(InventoryExpansion.Core), "InventoryExpansion", "1.0.0", "DooDesch", null)]
+[assembly: MelonInfo(typeof(InventoryExpansion.Core), "InventoryExpansion", "1.1.0", "DooDesch", null)]
 [assembly: MelonGame("ReLUGames", "MIMESIS")]
 
 namespace InventoryExpansion
