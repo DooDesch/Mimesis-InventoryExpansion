@@ -1,6 +1,11 @@
-# Mimesis InventoryExpansion Mod
+# MIMESIS - InventoryExpansion
 
 A MelonLoader mod for Mimesis that expands your inventory with additional backpack slots.
+
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Game](https://img.shields.io/badge/game-MIMESIS-purple)
+![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.1+-green)
+![Status](https://img.shields.io/badge/status-working-brightgreen)
 
 ---
 

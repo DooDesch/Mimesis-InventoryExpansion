@@ -1,6 +1,11 @@
-# InventoryExpansion Mod
+# MIMESIS - InventoryExpansion
 
 Expand your inventory with additional backpack slots that can be toggled on and off.
+
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Game](https://img.shields.io/badge/game-MIMESIS-purple)
+![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.1+-green)
+![Status](https://img.shields.io/badge/status-working-brightgreen)
 
 ## Features
 
