@@ -44,10 +44,16 @@ namespace InventoryExpansion.Patches
 
 				if (_backpackPanel != null)
 				{
-					if (!_slotsMoved)
-					{
-						MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
-					}
+					// A new inventory UI instance was created (e.g. after a map change).
+					// The game recreates UIPrefab_Inventory and its slots per map, but our
+					// panel persists (DontDestroyOnLoad). Without rebuilding, the panel keeps
+					// the previous map's now-stale slot containers, the new extra slots stay
+					// in their default inventory positions, and the scene-change handler left
+					// the panel hidden. Drop the old containers, re-attach this UI's extra
+					// slots, and restore the panel to its peek state.
+					CleanupMovedSlots();
+					_slotsMoved = false;
+					MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
 					return;
 				}
 
@@ -309,6 +315,24 @@ namespace InventoryExpansion.Patches
 			if (_backpackPanel != null && _backpackPanel.gameObject != null)
 			{
 				_backpackPanel.gameObject.SetActive(false);
+			}
+		}
+
+		// Destroy the slot containers we previously parented under the panel. Called
+		// before re-attaching a freshly created inventory UI's slots (e.g. after a map
+		// change) so the persistent panel does not accumulate stale/destroyed slots.
+		// The key-hint child is left intact (different name prefix).
+		private static void CleanupMovedSlots()
+		{
+			if (_backpackPanel == null) return;
+
+			for (int i = _backpackPanel.childCount - 1; i >= 0; i--)
+			{
+				var child = _backpackPanel.GetChild(i);
+				if (child != null && child.name.StartsWith("InventoryExpansion_SlotContainer_"))
+				{
+					UnityEngine.Object.Destroy(child.gameObject);
+				}
 			}
 		}
 
@@ -749,10 +773,14 @@ namespace InventoryExpansion.Patches
 				
 				float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
 				_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
+				// Restore visibility to the resting "peek" state. After a map change the
+				// scene-change/OnDestroy handler had deactivated the persistent panel, so
+				// re-enable it here or it would stay invisible until the toggle key.
+				_backpackPanel.gameObject.SetActive(true);
 				_backpackFullyVisible = false;
 				UpdateKeyHintVisibility();
-				
-				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}", 
+
+				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}",
 					additionalSlots, _backpackPanel.sizeDelta);
 			}
 			catch (Exception ex)
