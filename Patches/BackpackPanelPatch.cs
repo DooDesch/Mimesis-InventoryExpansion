@@ -44,10 +44,16 @@ namespace InventoryExpansion.Patches
 
 				if (_backpackPanel != null)
 				{
-					if (!_slotsMoved)
-					{
-						MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
-					}
+					// A new inventory UI instance was created (e.g. after a map change).
+					// The game recreates UIPrefab_Inventory and its slots per map, but our
+					// panel persists (DontDestroyOnLoad). Without rebuilding, the panel keeps
+					// the previous map's now-stale slot containers, the new extra slots stay
+					// in their default inventory positions, and the scene-change handler left
+					// the panel hidden. Drop the old containers, re-attach this UI's extra
+					// slots, and restore the panel to its peek state.
+					CleanupMovedSlots();
+					_slotsMoved = false;
+					MelonCoroutines.Start(MoveSlotsToPanelCoroutine(__instance));
 					return;
 				}
 
@@ -138,8 +144,11 @@ namespace InventoryExpansion.Patches
 				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Failed to create key hint text during UI creation: {ex}");
 			}
 			
+			// Start hidden. The per-frame in-game check (EnsurePeekIfHidden) reveals the
+			// panel once the player is actually in interactive gameplay, so it never shows
+			// over the loading screen.
 			_backpackFullyVisible = false;
-			_backpackPanel.gameObject.SetActive(true);
+			_backpackPanel.gameObject.SetActive(false);
 		}
 
 		private static void LoadBackpackSprite()
@@ -263,40 +272,13 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				var hub = Hub.s;
-				if (hub == null)
-				{
-					return false;
-				}
-
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				ProtoActor protoActor = null;
-
-				if (protoActorField == null)
-				{
-					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					foreach (var field in allFields)
-					{
-						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
-						{
-							protoActor = field.GetValue(hub) as ProtoActor;
-							if (protoActor != null && protoActor.AmIAvatar())
-							{
-								return true;
-							}
-						}
-					}
-					return false;
-				}
-
-				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				ProtoActor protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return false;
 				}
 
-				bool isAvatar = protoActor.AmIAvatar();
-				return isAvatar;
+				return protoActor.AmIAvatar();
 			}
 			catch (Exception ex)
 			{
@@ -315,13 +297,7 @@ namespace InventoryExpansion.Patches
 					return true;
 				}
 
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				if (protoActorField == null)
-				{
-					return false;
-				}
-
-				var protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				var protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return true;
@@ -343,6 +319,85 @@ namespace InventoryExpansion.Patches
 			{
 				_backpackPanel.gameObject.SetActive(false);
 			}
+		}
+
+		// Destroy the slot containers we previously parented under the panel. Called
+		// before re-attaching a freshly created inventory UI's slots (e.g. after a map
+		// change) so the persistent panel does not accumulate stale/destroyed slots.
+		// The key-hint child is left intact (different name prefix).
+		private static void CleanupMovedSlots()
+		{
+			if (_backpackPanel == null) return;
+
+			for (int i = _backpackPanel.childCount - 1; i >= 0; i--)
+			{
+				var child = _backpackPanel.GetChild(i);
+				if (child != null && child.name.StartsWith("InventoryExpansion_SlotContainer_"))
+				{
+					UnityEngine.Object.Destroy(child.gameObject);
+				}
+			}
+		}
+
+		private static FieldInfo _uimanField;
+
+		// True while the game's full-screen scene loading UI is shown. Used to keep the
+		// backpack hidden (and non-interactive) during map changes / loading screens.
+		internal static bool IsLoadingScreenActive()
+		{
+			try
+			{
+				var hub = Hub.s;
+				if (hub == null)
+				{
+					return false;
+				}
+				// Hub.uiman is internal; reach it via its auto-property backing field.
+				if (_uimanField == null)
+				{
+					_uimanField = typeof(Hub).GetField("<uiman>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+				}
+				var uiman = _uimanField?.GetValue(hub) as UIManager;
+				var loading = uiman?.ui_sceneloading;
+				return loading != null && loading.isActiveAndEnabled;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		// Restore the panel to its resting "peek" state if it is currently hidden (e.g.
+		// after a map change or loading screen deactivated it). No-op while an open/close
+		// animation is running or when the panel is already visible.
+		internal static void EnsurePeekIfHidden()
+		{
+			if (_backpackPanel == null || !_slotsMoved)
+			{
+				return;
+			}
+			if (_animationCoroutine != null)
+			{
+				return;
+			}
+			if (_backpackPanel.gameObject.activeSelf)
+			{
+				return;
+			}
+
+			if (_panelHeight == 0f)
+			{
+				_panelHeight = _backpackPanel.sizeDelta.y;
+			}
+			if (_initialPanelY == 0f)
+			{
+				_initialPanelY = 40f;
+			}
+			float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
+			_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
+			_backpackFullyVisible = false;
+			_backpackPanel.gameObject.SetActive(true);
+			UpdateKeyHintVisibility();
 		}
 
 		private static IEnumerator AnimateBackpackVisibility(bool targetVisible)
@@ -784,8 +839,10 @@ namespace InventoryExpansion.Patches
 				_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
 				_backpackFullyVisible = false;
 				UpdateKeyHintVisibility();
-				
-				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}", 
+				// Left inactive on purpose: the per-frame in-game check reveals it so it
+				// never shows over the loading screen after a map change.
+
+				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}",
 					additionalSlots, _backpackPanel.sizeDelta);
 			}
 			catch (Exception ex)
@@ -815,6 +872,16 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
+				// During a map change / loading screen the panel must be fully hidden and
+				// non-interactive (it is on a separate DontDestroyOnLoad canvas, so it does
+				// not follow the game HUD's visibility on its own).
+				if (BackpackPanelPatch.IsLoadingScreenActive())
+				{
+					BackpackPanelPatch.HideBackpackCompletely();
+					wasKeyPressedLastFrame = false;
+					return;
+				}
+
 				if (BackpackPanelPatch.IsGamePaused())
 				{
 					if (BackpackPanelPatch.IsBackpackFullyVisible)
@@ -828,6 +895,10 @@ namespace InventoryExpansion.Patches
 					wasKeyPressedLastFrame = false;
 					return;
 				}
+
+				// In interactive gameplay (not loading, not paused): make sure the panel is
+				// at least at its resting peek state, e.g. after a map change had hidden it.
+				BackpackPanelPatch.EnsurePeekIfHidden();
 
 				Keyboard keyboard = Keyboard.current;
 				if (keyboard == null)
@@ -1034,33 +1105,7 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				var hub = Hub.s;
-				if (hub == null)
-				{
-					return false;
-				}
-
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				ProtoActor protoActor = null;
-
-				if (protoActorField == null)
-				{
-					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					foreach (var field in allFields)
-					{
-						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
-						{
-							protoActor = field.GetValue(hub) as ProtoActor;
-							if (protoActor != null && protoActor.AmIAvatar())
-							{
-								return true;
-							}
-						}
-					}
-					return false;
-				}
-
-				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				ProtoActor protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return false;
