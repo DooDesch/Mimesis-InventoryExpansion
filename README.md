@@ -1,161 +1,75 @@
 # MIMESIS - InventoryExpansion
 
-A MelonLoader mod for Mimesis that expands your inventory with additional backpack slots.
+> Adds extra backpack inventory slots you toggle on demand with a configurable key, shown in a custom animated panel that slides in and out.
+> Carry more loot without permanently cluttering the standard 4-slot hotbar. Standalone, no MimicAPI required.
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.1-blue)
 ![Game](https://img.shields.io/badge/game-MIMESIS-purple)
-![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.1+-green)
+![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Status](https://img.shields.io/badge/status-working-brightgreen)
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Development](#development)
-- [License](#license)
-
----
 
 ## Features
 
-- Add **4, 9, or 16 additional inventory slots** (2x2, 3x3, or 4x4 grid)
-- **Toggle between standard inventory and backpack** with a configurable key (default: `C`)
-- Backpack slots are displayed in a **custom backpack UI panel** with animated slide-in/out
-- **Visual key hint** displayed on the backpack showing the toggle key
-- Backpack **automatically hides** when leaving the game or returning to the title screen
-- **Optional movement speed reduction** (50%) while backpack is open for better gameplay balance
-- Slots are **properly integrated** with the game's inventory system
-- **Fully configurable** via MelonPreferences
-
----
+- Adds 4, 9, or 16 extra inventory slots laid out as a square grid (2x2, 3x3, or 4x4); the count is configurable. The new slots are real, usable inventory, not just a visual overlay.
+- Toggle between the standard hotbar and the backpack with a configurable key (default `C`); the mod reads the key live each frame.
+- Extra slots render in a custom backpack UI panel that uses the shipped `Backpack.png` sprite and slides in and out with a short eased animation. If the image is missing it falls back to a translucent black panel.
+- Shows a visual key hint on the panel displaying the currently configured toggle key.
+- Context-aware slot scrolling: while the backpack is open, slot cycling affects only the backpack slots; while it is closed, it affects only the standard 4 slots.
+- Optional movement-speed reduction to 50% while the backpack is fully open, restored automatically when it closes.
+- Automatically hides the panel during loading screens and map changes, and when you leave the game or return to the title screen.
 
 ## Requirements
 
 | Component | Version |
 |-----------|---------|
-| **Mimesis** | Latest Steam build |
-| **MelonLoader** | 0.7.1 or higher |
-
----
+| MIMESIS | 0.3.0 (current Steam build) |
+| MelonLoader | 0.7.3+ |
 
 ## Installation
 
-### Option 1: Thunderstore Mod Manager (Recommended)
+### Recommended: Thunderstore mod manager
 
-1. Install via Thunderstore Mod Manager
+Install through a Thunderstore mod manager such as [r2modman](https://thunderstore.io/package/ebkr/r2modman/) or [Gale](https://thunderstore.io/package/Kesomannen/GaleModManager/). It resolves the MelonLoader dependency and ships the backpack asset automatically.
 
-### Option 2: Manual Installation
+### Manual
 
-1. Download the latest release from the [releases page](../../releases)
-2. Extract and place the files into your Mimesis mods directory:
-   ```
-   Mimesis/MelonLoader/Mods/InventoryExpansion.dll
-   ```
-3. Launch the game once to generate the configuration file
-
-> **Note:** The configuration file will be created automatically on first launch at `UserData/MelonPreferences.cfg`
-
----
+1. Install [MelonLoader 0.7.3](https://melonwiki.xyz/#/) into MIMESIS.
+2. Download the latest release from the [releases page](../../releases).
+3. Place `InventoryExpansion.dll` into `MIMESIS/Mods/`.
+4. Place the bundled `Backpack.png` at `MIMESIS/Mods/Assets/Backpack.png` (an `Assets` subfolder next to the DLL). Without it the panel still works but renders as a plain translucent box.
+5. Launch the game once to generate the configuration file at `UserData/MelonPreferences.cfg`.
 
 ## Configuration
 
-Configuration values are stored in `UserData/MelonPreferences.cfg` under the `InventoryExpansion` category.
+Stored in `UserData/MelonPreferences.cfg` under the `[InventoryExpansion]` category. You can also edit these through a MelonPreferences UI.
 
-### Available Options
-
-| Option | Description | Default | Range |
-|--------|-------------|---------|-------|
-| `Enabled` | Enable/disable the mod | `true` | `true` / `false` |
-| `AdditionalSlots` | Number of extra inventory slots | `9` | `4`, `9`, or `16` |
-| `BackpackKey` | Key to toggle backpack visibility | `C` | Any valid key |
-| `ReduceMovementSpeed` | Reduce player movement speed to 50% while backpack is fully open | `true` | `true` / `false` |
-
-> **Note:** `AdditionalSlots` will be rounded to the nearest valid option (4, 9, or 16) if an invalid value is set.
-
----
+| Option | Description | Default | Values/Range |
+|--------|-------------|---------|--------------|
+| `Enabled` | Enable InventoryExpansion functionality. When disabled, the mod will not modify game behavior. | `true` | `true` / `false` |
+| `AdditionalSlots` | Number of extra inventory slots to add on top of the game's default inventory size. Valid values: 4, 9, or 16 (square grids 2x2, 3x3, 4x4). Other values are rounded to the nearest valid option. | `4` | `4`, `9`, or `16` (clamped at read time: `<=6` becomes `4`, `<=12` becomes `9`, otherwise `16`; the corrected value is written back to the config) |
+| `BackpackKey` | Key to toggle backpack visibility. Press to switch between standard inventory and backpack. | `C` | Any `UnityEngine.KeyCode` name (parsed case-insensitively). Invalid or empty values fall back to `C`. The key must also be a valid Unity Input System key name for the toggle to fire. |
+| `ReduceMovementSpeed` | When enabled, player movement speed is reduced to 50% while the backpack is fully open. | `true` | `true` / `false` |
 
 ## Usage
 
-1. **Configure** the number of additional slots in the mod settings
-2. **Press the configured toggle key** (default: `C`) to show/hide the backpack
-3. **When the backpack is visible**, scrolling will only affect backpack slots
-4. **When the backpack is hidden**, scrolling will only affect the standard 4 slots
-5. The backpack **automatically hides** when you leave the game or return to the title screen
+- Press the configured toggle key (default `C`) to slide the backpack panel in and out. The panel sits at the bottom-right of the screen and shows a key hint.
+- When the backpack is open, slot scrolling and selection cycle only the backpack slots; when it is closed, they cycle only the standard 4 hotbar slots.
+- With `ReduceMovementSpeed` on, you move at 50% speed while the backpack is fully open, and full speed is restored when it closes.
+- The panel auto-hides during loading screens and map changes, and when you leave the game or return to the title screen.
+- Set `AdditionalSlots` (4, 9, or 16) and `BackpackKey` in `UserData/MelonPreferences.cfg`; the mod reads the key live each frame.
 
----
+## Compatibility
 
-## Development
+Built for Mimesis 0.3.0 / MelonLoader 0.7.3. This is a client-side, single-player UI mod with no host or multiplayer requirement.
 
-### Prerequisites
-
-| Component | Version / Link |
-|-----------|----------------|
-| **Mimesis** | [Latest Steam build](https://store.steampowered.com/app/2827200/MIMESIS/) |
-| **.NET SDK** | [8.0+](https://dotnet.microsoft.com/download) |
-| **IDE** | [Visual Studio 2022](https://visualstudio.microsoft.com/) or similar |
-| **MelonLoader** | [Latest version](https://melonwiki.xyz/#/) |
-| **Workspace** | Access to a Workspace repository with game DLLs |
-
-### Project Structure
+## Building (developers)
 
 ```
-InventoryExpansion/
-├── Config/
-│   └── InventoryExpansionPreferences.cs    # Configuration system
-├── Patches/
-│   ├── BackpackPanelPatch.cs              # Backpack UI panel
-│   ├── InventoryControllerPatches.cs      # Inventory slot extension
-│   ├── InventoryUiPatches.cs              # UI slot creation
-│   ├── InventorySelectionPatches.cs       # Slot selection logic
-│   └── GameConfigPatches.cs               # Game config modification
-├── Assets/
-│   └── Backpack.png                        # Backpack UI asset
-├── Core.cs                                 # Main entry point
-└── InventoryExpansion.csproj              # Project file
+dotnet build -c Release
 ```
 
-### Key Files
+References are resolved from `Workspace/lib/game` (game DLLs) and `Workspace/lib/melonloader`. The PostBuild step copies `InventoryExpansion.dll` to the configured `Mods` directory and copies `Assets/Backpack.png` to `Mods/Assets/Backpack.png`. This mod is standalone and does not reference MimicAPI.
 
-- **`Core.cs`** - Main entry point and mod initialization
-- **`Config/InventoryExpansionPreferences.cs`** - Configuration management
-- **`Patches/BackpackPanelPatch.cs`** - Backpack UI panel implementation
-- **`Patches/InventoryControllerPatches.cs`** - Inventory slot extension logic
-- **`Patches/InventoryUiPatches.cs`** - UI slot creation and management
-- **`Patches/InventorySelectionPatches.cs`** - Slot selection and scrolling logic
-- **`Patches/GameConfigPatches.cs`** - Game configuration modifications
+## Credits / License
 
-### Build & Deploy
-
-#### Local Build
-
-The project is configured to automatically copy the built DLL to the game's Mods directory. Update the paths in `InventoryExpansion.csproj` to match your setup:
-
-| Property | Description |
-|----------|-------------|
-| `ModsDirectory` | Path to `MIMESIS/Mods` folder |
-| `GameExePath` | Path to `MIMESIS.exe` |
-
-#### Automated Releases (GitHub Actions)
-
-1. Update the version in `InventoryExpansion.csproj`
-2. Commit and push the changes
-3. Create a Git tag: `git tag v1.0.1`
-4. Push the tag: `git push origin v1.0.1`
-
-The GitHub Actions workflow will automatically:
-- Build the project
-- Create a GitHub Release
-- Upload to Thunderstore (if configured)
-
----
-
-## License
-
-This project is provided as-is under the **MIT License**. Contributions are welcome via pull requests.
-
----
+Author: DooDesch. Provided as-is under the MIT License. Contributions welcome via pull requests on the [repository](https://github.com/DooDesch/Mimesis-InventoryExpansion).
