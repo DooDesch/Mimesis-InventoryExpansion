@@ -841,8 +841,13 @@ namespace InventoryExpansion.Patches
 					frameRT.anchorMin = new Vector2(0.5f, 0.5f);
 					frameRT.anchorMax = new Vector2(0.5f, 0.5f);
 					frameRT.pivot = templateFrameRT.pivot;
-					frameRT.sizeDelta = templateFrameRT.sizeDelta * scaleFactor;
+					// Scale the whole slot (frame + its icon/stack/wait children) uniformly via
+					// localScale instead of scaling each child's sizeDelta/anchoredPosition. The
+					// per-child math misplaced stretch-anchored children like the durability/stack
+					// count text ("100%"); localScale is anchor-agnostic and keeps every child on the slot.
+					frameRT.sizeDelta = templateFrameRT.sizeDelta;
 					frameRT.anchoredPosition = Vector2.zero;
+					frameRT.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
 
 					frame.sprite = firstFrame.sprite;
 					frame.material = firstFrame.material;
@@ -875,8 +880,8 @@ namespace InventoryExpansion.Patches
 							iconRT.anchorMin = templateImageRT.anchorMin;
 							iconRT.anchorMax = templateImageRT.anchorMax;
 							iconRT.pivot = templateImageRT.pivot;
-							iconRT.sizeDelta = templateImageRT.sizeDelta * scaleFactor;
-							iconRT.anchoredPosition = templateImageRT.anchoredPosition * scaleFactor;
+							iconRT.sizeDelta = templateImageRT.sizeDelta;
+							iconRT.anchoredPosition = templateImageRT.anchoredPosition;
 						}
 					}
 
@@ -889,9 +894,9 @@ namespace InventoryExpansion.Patches
 							stackRT.anchorMin = templateStackRT.anchorMin;
 							stackRT.anchorMax = templateStackRT.anchorMax;
 							stackRT.pivot = templateStackRT.pivot;
-							stackRT.sizeDelta = templateStackRT.sizeDelta * scaleFactor;
-							stackRT.anchoredPosition = templateStackRT.anchoredPosition * scaleFactor;
-							stackText.fontSize = templateStack.fontSize * scaleFactor;
+							stackRT.sizeDelta = templateStackRT.sizeDelta;
+							stackRT.anchoredPosition = templateStackRT.anchoredPosition;
+							stackText.fontSize = templateStack.fontSize;
 						}
 					}
 				}
