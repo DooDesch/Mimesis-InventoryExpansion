@@ -28,6 +28,9 @@ namespace InventoryExpansion.Patches
 		private static float _panelHeight = 0f;
 		private static float _initialPanelY = 0f;
 		private static TMP_Text _keyHintText;
+		// The standard-inventory slot (0-3) that was selected before the backpack was opened,
+		// restored when the backpack is closed so the cursor never stays on a hidden slot.
+		private static int _savedStandardSlot = 0;
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIPrefab_Inventory), "Awake")]
@@ -241,6 +244,72 @@ namespace InventoryExpansion.Patches
 			}
 			
 			_animationCoroutine = MelonCoroutines.Start(AnimateBackpackVisibility(targetVisible));
+		}
+
+		// Move the inventory selection when the backpack is toggled with the key, so the
+		// cursor follows the visible inventory instead of getting stuck on a hidden slot.
+		// On open: jump to the first backpack slot (remembering the standard slot). On close:
+		// restore the remembered standard slot. Each direction is independently configurable.
+		internal static void HandleCursorHandoff(ProtoActor avatar, bool opening)
+		{
+			try
+			{
+				if (avatar == null)
+				{
+					return;
+				}
+				if (opening && !InventoryExpansionPreferences.SelectBackpackSlotOnOpen)
+				{
+					return;
+				}
+				if (!opening && !InventoryExpansionPreferences.RestoreStandardSlotOnClose)
+				{
+					return;
+				}
+
+				var inventoryField = InventorySelectionHelper.GetActorInventoryField();
+				var inventory = inventoryField?.GetValue(avatar);
+				if (inventory == null)
+				{
+					return;
+				}
+
+				var inventoryType = inventory.GetType();
+				var slotSizeField = InventorySelectionHelper.GetSlotSizeField(inventoryType);
+				var selectedSlotIndexField = InventorySelectionHelper.GetSelectedSlotIndexField(inventoryType);
+				var selectSlotMethod = InventorySelectionHelper.GetSelectSlotMethod(inventoryType);
+				if (slotSizeField == null || selectedSlotIndexField == null || selectSlotMethod == null)
+				{
+					return;
+				}
+
+				int slotSize = (int)(slotSizeField.GetValue(inventory) ?? 4);
+				if (slotSize <= 4)
+				{
+					// No backpack slots exist, nothing to hand off to.
+					return;
+				}
+
+				int currentSlot = (int)(selectedSlotIndexField.GetValue(inventory) ?? 0);
+
+				if (opening)
+				{
+					if (currentSlot >= 0 && currentSlot <= 3)
+					{
+						_savedStandardSlot = currentSlot;
+					}
+					selectSlotMethod.Invoke(inventory, new object[] { 4 });
+				}
+				else
+				{
+					int target = Mathf.Clamp(_savedStandardSlot, 0, 3);
+					selectSlotMethod.Invoke(inventory, new object[] { target });
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Cursor handoff failed: {ex}");
+			}
 		}
 
 		internal static bool IsGamePaused()
@@ -926,7 +995,10 @@ namespace InventoryExpansion.Patches
 
 				if (wasKeyPressedThisFrame)
 				{
+					// Capture the toggle direction before flipping (fully visible -> closing).
+					bool opening = !BackpackPanelPatch.IsBackpackFullyVisible;
 					BackpackPanelPatch.ToggleBackpack();
+					BackpackPanelPatch.HandleCursorHandoff(__instance, opening);
 				}
 			}
 			catch (Exception ex)

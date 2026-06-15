@@ -3,7 +3,7 @@
 > Adds extra backpack inventory slots you toggle on demand with a configurable key, shown in a custom animated panel that slides in and out.
 > Carry more loot without permanently cluttering the standard 4-slot hotbar. Standalone, no MimicAPI required.
 
-![Version](https://img.shields.io/badge/version-1.3.1-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![Game](https://img.shields.io/badge/game-MIMESIS-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Status](https://img.shields.io/badge/status-working-brightgreen)
@@ -15,6 +15,8 @@
 - Extra slots render in a custom backpack UI panel that uses the bundled sprite and slides in and out with a short eased animation. If the image is missing it falls back to a translucent black panel.
 - Shows a visual key hint on the panel displaying the currently configured toggle key.
 - Context-aware slot scrolling: while the backpack is open, slot cycling affects only the backpack slots; while it is closed, it affects only the standard 4 slots.
+- Cursor handoff on toggle: opening the backpack moves your selection to the first backpack slot, and closing it returns the selection to the standard inventory, so the cursor never stays stuck on a hidden slot. Each direction is configurable.
+- Optional backpack-first pickup: while the backpack is open, items you pick up fill the backpack slots before the standard inventory (host / single-player only).
 - Optional movement-speed reduction to 50% while the backpack is fully open, restored automatically when it closes.
 - Automatically hides the panel during loading screens and map changes, and when you leave the game or return to the title screen.
 
@@ -50,11 +52,16 @@ Stored in `UserData/MelonPreferences.cfg` under the `[InventoryExpansion]` categ
 | `AdditionalSlots` | Number of extra inventory slots to add on top of the game's default inventory size. Valid values: 4, 9, or 16 (square grids 2x2, 3x3, 4x4). Other values are rounded to the nearest valid option. | `4` | `4`, `9`, or `16` |
 | `BackpackKey` | Key to toggle backpack visibility. Press to switch between standard inventory and backpack. | `C` | Any Unity key name (case-insensitive). Invalid or empty values fall back to `C`. |
 | `ReduceMovementSpeed` | When enabled, player movement speed is reduced to 50% while the backpack is fully open. | `true` | `true` / `false` |
+| `SelectBackpackSlotOnOpen` | When opening the backpack, move the selected slot to the first backpack slot. | `true` | `true` / `false` |
+| `RestoreStandardSlotOnClose` | When closing the backpack, return the selected slot to the standard inventory (the slot selected before opening). | `true` | `true` / `false` |
+| `FillBackpackFirst` | While the backpack is open, picked-up items fill the backpack slots before the standard inventory. Host / single-player only. | `true` | `true` / `false` |
 
 ## Usage
 
 - Press the configured toggle key (default `C`) to slide the backpack panel in and out. The panel sits at the bottom-right of the screen and shows a key hint.
 - When the backpack is open, slot scrolling and selection cycle only the backpack slots; when it is closed, they cycle only the standard 4 hotbar slots.
+- Opening the backpack jumps your selection to the first backpack slot; closing it returns the selection to your previous standard slot, so the cursor is never stuck on a hidden slot (toggle each via `SelectBackpackSlotOnOpen` / `RestoreStandardSlotOnClose`).
+- With `FillBackpackFirst` on, items you pick up while the backpack is open go into backpack slots first. This changes server-side placement, so it only applies when you host or play single-player.
 - With `ReduceMovementSpeed` on, you move at 50% speed while the backpack is fully open, and full speed is restored when it closes.
 - The panel auto-hides during loading screens and map changes, and when you leave the game or return to the title screen.
 

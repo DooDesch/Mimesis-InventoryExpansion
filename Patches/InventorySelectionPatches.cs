@@ -24,6 +24,18 @@ namespace InventoryExpansion.Patches
 		{
 			return inventoryType?.GetField("slotSize", BindingFlags.Instance | BindingFlags.NonPublic);
 		}
+
+		// The local avatar's client-side Inventory instance is stored in ProtoActor's
+		// private "inventory" field.
+		internal static FieldInfo GetActorInventoryField()
+		{
+			return typeof(ProtoActor).GetField("inventory", BindingFlags.Instance | BindingFlags.NonPublic);
+		}
+
+		internal static MethodInfo GetSelectSlotMethod(Type inventoryType)
+		{
+			return inventoryType?.GetMethod("SelectSlot", BindingFlags.Instance | BindingFlags.NonPublic);
+		}
 	}
 
 	[HarmonyPatch]

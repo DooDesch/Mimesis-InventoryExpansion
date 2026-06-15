@@ -6,9 +6,9 @@
 		<RootNamespace>InventoryExpansion</RootNamespace>
 		<LangVersion>latest</LangVersion>
 		<IsPackable>false</IsPackable>
-		<Version>1.3.1</Version>
-		<AssemblyVersion>1.3.1.0</AssemblyVersion>
-		<FileVersion>1.3.1.0</FileVersion>
+		<Version>1.4.0</Version>
+		<AssemblyVersion>1.4.0.0</AssemblyVersion>
+		<FileVersion>1.4.0.0</FileVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<AssemblyName>InventoryExpansion</AssemblyName>
 		<WorkspaceLibPath Condition="'$(WorkspaceLibPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib</WorkspaceLibPath>
@@ -71,6 +71,7 @@
 		<Compile Include="Patches\InventoryDebugPatches.cs" />
 		<Compile Include="Patches\BackpackPanelPatch.cs" />
 		<Compile Include="Patches\InventorySelectionPatches.cs" />
+		<Compile Include="Patches\InventoryPickupPatches.cs" />
 	</ItemGroup>
 	
 	<ItemGroup>

@@ -13,6 +13,9 @@ namespace InventoryExpansion.Config
 		private static MelonPreferences_Entry<int> _additionalSlots;
 		private static MelonPreferences_Entry<string> _backpackKey;
 		private static MelonPreferences_Entry<bool> _reduceMovementSpeed;
+		private static MelonPreferences_Entry<bool> _selectBackpackSlotOnOpen;
+		private static MelonPreferences_Entry<bool> _restoreStandardSlotOnClose;
+		private static MelonPreferences_Entry<bool> _fillBackpackFirst;
 
 		internal static void Initialize()
 		{
@@ -40,6 +43,24 @@ namespace InventoryExpansion.Config
 				true,
 				"Reduce Movement Speed",
 				"When enabled, player movement speed is reduced to 50% while the backpack is fully open."
+			);
+			_selectBackpackSlotOnOpen = CreateEntry(
+				"SelectBackpackSlotOnOpen",
+				true,
+				"Select Backpack Slot On Open",
+				"When opening the backpack, move the selected slot to the first backpack slot."
+			);
+			_restoreStandardSlotOnClose = CreateEntry(
+				"RestoreStandardSlotOnClose",
+				true,
+				"Restore Standard Slot On Close",
+				"When closing the backpack, return the selected slot to the standard inventory (the slot that was selected before opening)."
+			);
+			_fillBackpackFirst = CreateEntry(
+				"FillBackpackFirst",
+				true,
+				"Fill Backpack First",
+				"While the backpack is open, picked-up items fill the backpack slots before the standard inventory. Takes effect only when you are the host or in single-player."
 			);
 		}
 
@@ -121,6 +142,12 @@ namespace InventoryExpansion.Config
 		}
 
 		internal static bool ReduceMovementSpeed => _reduceMovementSpeed?.Value ?? true;
+
+		internal static bool SelectBackpackSlotOnOpen => _selectBackpackSlotOnOpen?.Value ?? true;
+
+		internal static bool RestoreStandardSlotOnClose => _restoreStandardSlotOnClose?.Value ?? true;
+
+		internal static bool FillBackpackFirst => _fillBackpackFirst?.Value ?? true;
 	}
 }
 
