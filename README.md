@@ -22,15 +22,35 @@
 
 ## Screenshots
 
-The backpack open with loot, the open/close animation, the two configurable grid sizes (`AdditionalSlots`), and the resting peek state with the toggle-key hint:
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="Screenshots/backpack-open.png" alt="Backpack open with items" width="300"><br>
+      <sub><b>Open with loot</b> - the extra slots hold real items</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="Screenshots/backpack-toggle.gif" alt="Opening and closing the backpack" width="300"><br>
+      <sub><b>Toggle with a key</b> (default <code>C</code>)</sub>
+    </td>
+  </tr>
+</table>
 
-![Backpack open with items](Screenshots/backpack-open.png)
-
-![Open and close animation](Screenshots/backpack-toggle.gif)
-
-| 9 slots (3x3) | 16 slots (4x4) | Peek (closed) |
-|---|---|---|
-| ![9 slots](Screenshots/backpack-9-slots.png) | ![16 slots](Screenshots/backpack-16-slots.png) | ![Peek](Screenshots/backpack-peek.png) |
+<table align="center">
+  <tr>
+    <td align="center" width="33%">
+      <img src="Screenshots/backpack-9-slots.png" alt="9 extra slots" width="210"><br>
+      <sub>9 slots (3x3)</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="Screenshots/backpack-16-slots.png" alt="16 extra slots" width="210"><br>
+      <sub>16 slots (4x4)</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="Screenshots/backpack-peek.png" alt="Resting peek state" width="210"><br>
+      <sub>Resting peek</sub>
+    </td>
+  </tr>
+</table>
 
 ## Requirements
 

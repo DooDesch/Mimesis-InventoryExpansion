@@ -22,13 +22,21 @@
 
 ## Screenshots
 
-The backpack open with loot, the open/close animation, the two configurable grid sizes (`AdditionalSlots`), and the resting peek state with the toggle-key hint:
+**Open with loot** - the extra backpack slots hold real items.
 
 ![Backpack open with items](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-open.png)
-![Open and close animation](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-toggle.gif)
-![9 slots (3x3)](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-9-slots.png)
-![16 slots (4x4)](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-16-slots.png)
-![Peek - closed](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-peek.png)
+
+**Toggle with a key** (default `C`).
+
+![Opening and closing the backpack](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-toggle.gif)
+
+**Configurable grid sizes** (`AdditionalSlots`) and the resting peek state with the key hint.
+
+![9 slots, 3x3](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-9-slots.png)
+
+![16 slots, 4x4](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-16-slots.png)
+
+![Resting peek](https://raw.githubusercontent.com/DooDesch/Mimesis-InventoryExpansion/main/Screenshots/backpack-peek.png)
 
 ## Requirements
 
