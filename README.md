@@ -20,6 +20,14 @@
 - Optional movement-speed reduction to 50% while the backpack is fully open, restored automatically when it closes.
 - Automatically hides the panel during loading screens and map changes, and when you leave the game or return to the title screen.
 
+## Screenshots
+
+The backpack at two configurable grid sizes (set via `AdditionalSlots`) and the resting peek state with the toggle-key hint:
+
+| 9 slots (3x3) | 16 slots (4x4) | Peek (closed) |
+|---|---|---|
+| ![9 slots](Screenshots/backpack-9-slots.png) | ![16 slots](Screenshots/backpack-16-slots.png) | ![Peek](Screenshots/backpack-peek.png) |
+
 ## Requirements
 
 | Component | Version |
