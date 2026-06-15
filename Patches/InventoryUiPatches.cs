@@ -182,13 +182,12 @@ namespace InventoryExpansion.Patches
 					stackComponent.alignment = templateStack.alignment;
 					stackComponent.color = templateStack.color;
 
-					var templateStackRT = templateStack.rectTransform;
-					var stackRT = stackComponent.rectTransform;
-					stackRT.anchorMin = templateStackRT.anchorMin;
-					stackRT.anchorMax = templateStackRT.anchorMax;
-					stackRT.pivot = templateStackRT.pivot;
-					stackRT.sizeDelta = templateStackRT.sizeDelta;
-					stackRT.anchoredPosition = templateStackRT.anchoredPosition;
+					// Place the durability/stack text where the live standard slot puts it
+					// (bottom-right of the slot) rather than copying the template's
+					// container-relative anchoredPosition, which does not apply to this frame-child.
+					// BackpackPanelPatch re-applies the same placement when the slot is moved into
+					// the panel; sharing the helper keeps both paths identical.
+					BackpackPanelPatch.ApplyStackPlacement(stackComponent, firstFrameRT, firstStack);
 
 					var waitGO = new GameObject(templateWait.gameObject.name + "_Extra" + index);
 					waitGO.transform.SetParent(frameGO.transform, false);

@@ -669,6 +669,39 @@ namespace InventoryExpansion.Patches
 			};
 		}
 
+		// Place a backpack slot's durability/stack text ("99%") at the bottom-right of the slot
+		// so it matches the original hotbar.
+		//
+		// The text is parented under the frame (see InventoryUiPatches), but in the game prefab
+		// the standard slot's stackCount is a SIBLING of its frame, so its anchoredPosition is
+		// slot-container-relative - copying that onto a frame-child threw the text off the slot.
+		// We give it a slightly-inset, frame-sized box centered on the frame and bottom-right
+		// text alignment; the text then sits in the bottom-right corner of its slot (matching the
+		// original) and inherits the frame's uniform localScale. This is deterministic - measuring
+		// the live slot's transform proved unreliable (it flipped the text to the top corner).
+		internal static void ApplyStackPlacement(TMP_Text stackText, RectTransform templateFrameRT, TMP_Text templateStack)
+		{
+			if (stackText == null || templateFrameRT == null)
+			{
+				return;
+			}
+
+			var stackRT = stackText.rectTransform;
+			Vector2 frameSize = templateFrameRT.sizeDelta;
+
+			stackRT.anchorMin = new Vector2(0.5f, 0.5f);
+			stackRT.anchorMax = new Vector2(0.5f, 0.5f);
+			stackRT.pivot = new Vector2(0.5f, 0.5f);
+			// Inset slightly so the text keeps a small margin from the slot edges, like the original.
+			stackRT.sizeDelta = new Vector2(frameSize.x * 0.85f, frameSize.y * 0.85f);
+			stackRT.anchoredPosition = Vector2.zero;
+			stackText.alignment = TextAlignmentOptions.BottomRight;
+			if (templateStack != null)
+			{
+				stackText.fontSize = templateStack.fontSize;
+			}
+		}
+
 		private static IEnumerator MoveSlotsToPanelCoroutine(UIPrefab_Inventory inventoryUI)
 		{
 			yield return null;
@@ -773,7 +806,6 @@ namespace InventoryExpansion.Patches
 				var templateImage = imageField?.GetValue(firstSlot) as Image;
 				var templateStack = stackField?.GetValue(firstSlot) as TMP_Text;
 				var templateImageRT = templateImage?.rectTransform;
-				var templateStackRT = templateStack?.rectTransform;
 
 				for (int i = 4; i < inventorySlots.Count; i++)
 				{
@@ -885,18 +917,12 @@ namespace InventoryExpansion.Patches
 						}
 					}
 
-					if (stackField != null && templateStackRT != null)
+					if (stackField != null)
 					{
 						var stackText = stackField.GetValue(slot) as TMP_Text;
 						if (stackText != null)
 						{
-							var stackRT = stackText.rectTransform;
-							stackRT.anchorMin = templateStackRT.anchorMin;
-							stackRT.anchorMax = templateStackRT.anchorMax;
-							stackRT.pivot = templateStackRT.pivot;
-							stackRT.sizeDelta = templateStackRT.sizeDelta;
-							stackRT.anchoredPosition = templateStackRT.anchoredPosition;
-							stackText.fontSize = templateStack.fontSize;
+							ApplyStackPlacement(stackText, templateFrameRT, templateStack);
 						}
 					}
 				}
