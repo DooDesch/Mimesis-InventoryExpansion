@@ -22,7 +22,11 @@
 
 ## Screenshots
 
-The backpack at two configurable grid sizes (set via `AdditionalSlots`) and the resting peek state with the toggle-key hint:
+The backpack open with loot, the open/close animation, the two configurable grid sizes (`AdditionalSlots`), and the resting peek state with the toggle-key hint:
+
+![Backpack open with items](Screenshots/backpack-open.png)
+
+![Open and close animation](Screenshots/backpack-toggle.gif)
 
 | 9 slots (3x3) | 16 slots (4x4) | Peek (closed) |
 |---|---|---|
