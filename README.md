@@ -107,7 +107,7 @@ Built for Mimesis 0.3.0 / MelonLoader 0.7.3. This is a client-side, single-playe
 dotnet build -c Release
 ```
 
-References are resolved from `Workspace/lib/game` (game DLLs) and `Workspace/lib/melonloader`. The PostBuild step copies `InventoryExpansion.dll` to the configured `Mods` directory and copies `Assets/Backpack.png` to `Mods/Assets/Backpack.png`. This mod is standalone and does not reference MimicAPI.
+References are resolved from `Workspace/lib/game` (game DLLs) and `Workspace/lib/melonloader`. The PostBuild step copies `InventoryExpansion.dll` to the configured `Mods` directory and copies `Assets/Backpack.png` to `Mods/Assets/Backpack.png`.
 
 ## Credits / License
 
