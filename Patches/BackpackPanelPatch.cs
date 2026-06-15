@@ -144,8 +144,11 @@ namespace InventoryExpansion.Patches
 				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Failed to create key hint text during UI creation: {ex}");
 			}
 			
+			// Start hidden. The per-frame in-game check (EnsurePeekIfHidden) reveals the
+			// panel once the player is actually in interactive gameplay, so it never shows
+			// over the loading screen.
 			_backpackFullyVisible = false;
-			_backpackPanel.gameObject.SetActive(true);
+			_backpackPanel.gameObject.SetActive(false);
 		}
 
 		private static void LoadBackpackSprite()
@@ -334,6 +337,67 @@ namespace InventoryExpansion.Patches
 					UnityEngine.Object.Destroy(child.gameObject);
 				}
 			}
+		}
+
+		private static FieldInfo _uimanField;
+
+		// True while the game's full-screen scene loading UI is shown. Used to keep the
+		// backpack hidden (and non-interactive) during map changes / loading screens.
+		internal static bool IsLoadingScreenActive()
+		{
+			try
+			{
+				var hub = Hub.s;
+				if (hub == null)
+				{
+					return false;
+				}
+				// Hub.uiman is internal; reach it via its auto-property backing field.
+				if (_uimanField == null)
+				{
+					_uimanField = typeof(Hub).GetField("<uiman>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+				}
+				var uiman = _uimanField?.GetValue(hub) as UIManager;
+				var loading = uiman?.ui_sceneloading;
+				return loading != null && loading.isActiveAndEnabled;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		// Restore the panel to its resting "peek" state if it is currently hidden (e.g.
+		// after a map change or loading screen deactivated it). No-op while an open/close
+		// animation is running or when the panel is already visible.
+		internal static void EnsurePeekIfHidden()
+		{
+			if (_backpackPanel == null || !_slotsMoved)
+			{
+				return;
+			}
+			if (_animationCoroutine != null)
+			{
+				return;
+			}
+			if (_backpackPanel.gameObject.activeSelf)
+			{
+				return;
+			}
+
+			if (_panelHeight == 0f)
+			{
+				_panelHeight = _backpackPanel.sizeDelta.y;
+			}
+			if (_initialPanelY == 0f)
+			{
+				_initialPanelY = 40f;
+			}
+			float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
+			_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
+			_backpackFullyVisible = false;
+			_backpackPanel.gameObject.SetActive(true);
+			UpdateKeyHintVisibility();
 		}
 
 		private static IEnumerator AnimateBackpackVisibility(bool targetVisible)
@@ -773,12 +837,10 @@ namespace InventoryExpansion.Patches
 				
 				float hiddenY = _initialPanelY - (_panelHeight * 0.75f);
 				_backpackPanel.anchoredPosition = new Vector2(_backpackPanel.anchoredPosition.x, hiddenY);
-				// Restore visibility to the resting "peek" state. After a map change the
-				// scene-change/OnDestroy handler had deactivated the persistent panel, so
-				// re-enable it here or it would stay invisible until the toggle key.
-				_backpackPanel.gameObject.SetActive(true);
 				_backpackFullyVisible = false;
 				UpdateKeyHintVisibility();
+				// Left inactive on purpose: the per-frame in-game check reveals it so it
+				// never shows over the loading screen after a map change.
 
 				MelonLogger.Msg("[InventoryExpansion][BackpackPanel] Moved {0} additional slots to panel. Panel size: {1}",
 					additionalSlots, _backpackPanel.sizeDelta);
@@ -810,6 +872,16 @@ namespace InventoryExpansion.Patches
 					return;
 				}
 
+				// During a map change / loading screen the panel must be fully hidden and
+				// non-interactive (it is on a separate DontDestroyOnLoad canvas, so it does
+				// not follow the game HUD's visibility on its own).
+				if (BackpackPanelPatch.IsLoadingScreenActive())
+				{
+					BackpackPanelPatch.HideBackpackCompletely();
+					wasKeyPressedLastFrame = false;
+					return;
+				}
+
 				if (BackpackPanelPatch.IsGamePaused())
 				{
 					if (BackpackPanelPatch.IsBackpackFullyVisible)
@@ -823,6 +895,10 @@ namespace InventoryExpansion.Patches
 					wasKeyPressedLastFrame = false;
 					return;
 				}
+
+				// In interactive gameplay (not loading, not paused): make sure the panel is
+				// at least at its resting peek state, e.g. after a map change had hidden it.
+				BackpackPanelPatch.EnsurePeekIfHidden();
 
 				Keyboard keyboard = Keyboard.current;
 				if (keyboard == null)
