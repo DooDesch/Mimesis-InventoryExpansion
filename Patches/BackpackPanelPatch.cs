@@ -263,40 +263,13 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				var hub = Hub.s;
-				if (hub == null)
-				{
-					return false;
-				}
-
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				ProtoActor protoActor = null;
-
-				if (protoActorField == null)
-				{
-					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					foreach (var field in allFields)
-					{
-						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
-						{
-							protoActor = field.GetValue(hub) as ProtoActor;
-							if (protoActor != null && protoActor.AmIAvatar())
-							{
-								return true;
-							}
-						}
-					}
-					return false;
-				}
-
-				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				ProtoActor protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return false;
 				}
 
-				bool isAvatar = protoActor.AmIAvatar();
-				return isAvatar;
+				return protoActor.AmIAvatar();
 			}
 			catch (Exception ex)
 			{
@@ -315,13 +288,7 @@ namespace InventoryExpansion.Patches
 					return true;
 				}
 
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				if (protoActorField == null)
-				{
-					return false;
-				}
-
-				var protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				var protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return true;
@@ -1034,33 +1001,7 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				var hub = Hub.s;
-				if (hub == null)
-				{
-					return false;
-				}
-
-				var protoActorField = typeof(Hub).GetField("protoActor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				ProtoActor protoActor = null;
-
-				if (protoActorField == null)
-				{
-					var allFields = typeof(Hub).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					foreach (var field in allFields)
-					{
-						if (field.FieldType == typeof(ProtoActor) || field.FieldType.IsSubclassOf(typeof(ProtoActor)))
-						{
-							protoActor = field.GetValue(hub) as ProtoActor;
-							if (protoActor != null && protoActor.AmIAvatar())
-							{
-								return true;
-							}
-						}
-					}
-					return false;
-				}
-
-				protoActor = protoActorField.GetValue(hub) as ProtoActor;
+				ProtoActor protoActor = Hub.Main?.GetMyAvatar();
 				if (protoActor == null)
 				{
 					return false;
