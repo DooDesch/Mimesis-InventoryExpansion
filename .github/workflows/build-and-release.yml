@@ -207,3 +207,23 @@ jobs:
           categories: |
             Mods
 
+  nexus:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download built ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: InventoryExpansion
+
+      - name: Upload to Nexus Mods
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.7
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_group_id: "7545485"
+          filename: "InventoryExpansion_${{ needs.build.outputs.version }}.zip"
+          version: ${{ needs.build.outputs.version }}
+          display_name: "InventoryExpansion ${{ needs.build.outputs.version }}"
+          file_category: main
+          archive_existing_file: true
+
