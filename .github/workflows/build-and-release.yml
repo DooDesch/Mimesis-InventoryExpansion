@@ -15,6 +15,7 @@ jobs:
     outputs:
       version: ${{ steps.version-check.outputs.version }}
       notes: ${{ steps.changelog.outputs.notes }}
+      notes_bbcode: ${{ steps.changelog.outputs.notes_bbcode }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,14 +51,33 @@ jobs:
           # Single source of truth is the hand-maintained CHANGELOG.md. Pull out the section for
           # this version; it is reused for the GitHub release body and the Nexus file description.
           VERSION="${{ steps.version-check.outputs.version }}"
-          NOTES=$(awk -v v="$VERSION" 'index($0,"## ["v"]")==1{grab=1;next} index($0,"## [")==1{if(grab)exit} grab{print}' CHANGELOG.md)
-          if [ -z "$NOTES" ]; then
+          SECTION=$(awk -v v="$VERSION" 'index($0,"## ["v"]")==1{grab=1;next} index($0,"## [")==1{if(grab)exit} grab{print}' CHANGELOG.md)
+          if [ -z "$SECTION" ]; then
             echo "::warning::No CHANGELOG.md section found for $VERSION"
-            NOTES="See CHANGELOG.md for details."
+            SECTION="See CHANGELOG.md for details."
           fi
+          # Markdown notes - GitHub renders Markdown in release bodies.
           {
             echo "notes<<CHANGELOG_EOF"
-            echo "$NOTES"
+            echo "$SECTION"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+          # Nexus file descriptions use BBCode, not Markdown. Convert "### Heading" to [b]Heading[/b],
+          # "- item" bullets to [list]/[*], drop inline-code backticks, and join wrapped bullet lines.
+          BBCODE=$(printf '%s\n' "$SECTION" | awk '
+            function flush(){ if(buf!=""){ printf "[*]%s\n", buf; buf="" } }
+            BEGIN{ inlist=0; buf="" }
+            {
+              line=$0; gsub(/`/,"",line); sub(/[ \t]+$/,"",line)
+              if (line ~ /^### /){ flush(); if(inlist){print "[/list]"; inlist=0} h=line; sub(/^### /,"",h); printf "[b]%s[/b]\n", h; next }
+              if (line ~ /^- /){ flush(); if(!inlist){print "[list]"; inlist=1} buf=line; sub(/^- /,"",buf); next }
+              if (line ~ /^[ \t]*$/){ next }
+              sub(/^[ \t]+/,"",line); if(buf!="") buf=buf " " line; else printf "%s\n", line
+            }
+            END{ flush(); if(inlist) print "[/list]" }')
+          {
+            echo "notes_bbcode<<CHANGELOG_EOF"
+            echo "$BBCODE"
             echo "CHANGELOG_EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -172,6 +192,6 @@ jobs:
           filename: "InventoryExpansion_${{ needs.build.outputs.version }}.zip"
           version: ${{ needs.build.outputs.version }}
           display_name: "InventoryExpansion ${{ needs.build.outputs.version }}"
-          description: ${{ needs.build.outputs.notes }}
+          description: ${{ needs.build.outputs.notes_bbcode }}
           file_category: main
           archive_existing_file: true
