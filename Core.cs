@@ -11,7 +11,9 @@ namespace InventoryExpansion
 		public override void OnInitializeMelon()
 		{
 			InventoryExpansionPreferences.Initialize();
-			HarmonyInstance.PatchAll();
+			// MelonLoader auto-applies this assembly's Harmony patches via HarmonyInit(); calling PatchAll()
+			// here too would double-apply every patch (each prefix/postfix runs twice). Do NOT add it back.
+			// (See FakePlayers/Core.cs.)
 			MelonLogger.Msg("InventoryExpansion initialized. Enabled={0}", InventoryExpansionPreferences.Enabled);
 		}
 	}
