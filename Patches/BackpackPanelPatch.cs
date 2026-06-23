@@ -1028,8 +1028,16 @@ namespace InventoryExpansion.Patches
 				{
 					// Capture the toggle direction before flipping (fully visible -> closing).
 					bool opening = !BackpackPanelPatch.IsBackpackFullyVisible;
-					BackpackPanelPatch.ToggleBackpack();
-					BackpackPanelPatch.HandleCursorHandoff(__instance, opening);
+					if (opening && InventoryExpansionPreferences.BlockLargeItemsInBackpack && LargeItemBackpackPatch.IsLargeHeldItem(__instance))
+					{
+						// A large item occupies the hand, so the backpack cannot be opened while holding one.
+						LargeItemBackpackPatch.ShowBackpackBlockedMessage("You can't open the backpack while holding a large item.");
+					}
+					else
+					{
+						BackpackPanelPatch.ToggleBackpack();
+						BackpackPanelPatch.HandleCursorHandoff(__instance, opening);
+					}
 				}
 			}
 			catch (Exception ex)

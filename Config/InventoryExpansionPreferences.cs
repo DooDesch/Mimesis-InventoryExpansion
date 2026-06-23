@@ -16,6 +16,10 @@ namespace InventoryExpansion.Config
 		private static MelonPreferences_Entry<bool> _selectBackpackSlotOnOpen;
 		private static MelonPreferences_Entry<bool> _restoreStandardSlotOnClose;
 		private static MelonPreferences_Entry<bool> _fillBackpackFirst;
+		private static MelonPreferences_Entry<bool> _blockLargeItemsInBackpack;
+#if DEBUG
+		private static MelonPreferences_Entry<bool> _debugDisableOwnerGate;
+#endif
 
 		internal static void Initialize()
 		{
@@ -62,6 +66,20 @@ namespace InventoryExpansion.Config
 				"Fill Backpack First",
 				"While the backpack is open, picked-up items fill the backpack slots before the standard inventory. Takes effect only when you are the host or in single-player."
 			);
+			_blockLargeItemsInBackpack = CreateEntry(
+				"BlockLargeItemsInBackpack",
+				true,
+				"Block Large Items In Backpack",
+				"When enabled, large items (the ones you cannot switch away from while holding them, e.g. two-handed items) cannot be picked up into the backpack while it is open. Trying to do so shows a message instead. Disable to allow large items in the backpack."
+			);
+#if DEBUG
+			_debugDisableOwnerGate = CreateEntry(
+				"DebugDisableOwnerGate",
+				false,
+				"[DEBUG] Disable Backpack Owner Gate",
+				"Debug only: when true, the backpack-first redirect ignores who owns the inventory (the old, buggy behaviour), so the multiplayer item duplication can be reproduced for diagnosis. Keep this false for normal play."
+			);
+#endif
 		}
 
 		private static MelonPreferences_Entry<T> CreateEntry<T>(string identifier, T defaultValue, string displayName, string description = null)
@@ -148,6 +166,11 @@ namespace InventoryExpansion.Config
 		internal static bool RestoreStandardSlotOnClose => _restoreStandardSlotOnClose?.Value ?? true;
 
 		internal static bool FillBackpackFirst => _fillBackpackFirst?.Value ?? true;
+
+		internal static bool BlockLargeItemsInBackpack => _blockLargeItemsInBackpack?.Value ?? true;
+#if DEBUG
+		internal static bool DebugDisableOwnerGate => _debugDisableOwnerGate?.Value ?? false;
+#endif
 	}
 }
 

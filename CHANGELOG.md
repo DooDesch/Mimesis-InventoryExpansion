@@ -4,6 +4,22 @@ All notable changes to InventoryExpansion are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.4.3] - 2026-06-23
+
+### Fixed
+- Multiplayer: fixed a backpack pickup issue that could make items appear duplicated
+  on clients. The backpack-first pickup runs on the host for every player, but was
+  decided from the local backpack state, so another player's pickup could be redirected
+  based on the host's backpack. It now only applies to your own inventory.
+
+### Added
+- Large items (the ones you cannot switch away from while holding them, such as
+  two-handed items) can no longer be picked up into the backpack while it is open; a
+  short message is shown instead.
+- The backpack can no longer be opened while you are holding a large item.
+- New "Block Large Items In Backpack" setting (on by default) controls both of the
+  above. Disable it to allow large items in the backpack again.
+
 ## [1.4.2] - 2026-06-22
 
 ### Fixed
