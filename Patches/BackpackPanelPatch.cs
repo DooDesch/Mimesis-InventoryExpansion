@@ -158,14 +158,13 @@ namespace InventoryExpansion.Patches
 		{
 			try
 			{
-				string assetsPath = Path.Combine(Path.GetDirectoryName(typeof(BackpackPanelPatch).Assembly.Location), "Assets", "Backpack.png");
-				if (!File.Exists(assetsPath))
+				byte[] fileData = GetBackpackPngBytes();
+				if (fileData == null || fileData.Length == 0)
 				{
-					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Backpack asset not found at: {assetsPath}");
+					MelonLogger.Error("[InventoryExpansion][BackpackPanel] Could not obtain Backpack.png from an external file or the embedded resource");
 					return;
 				}
 
-				byte[] fileData = File.ReadAllBytes(assetsPath);
 				Texture2D texture = new Texture2D(2, 2);
 				
 				bool loaded = false;
@@ -203,6 +202,55 @@ namespace InventoryExpansion.Patches
 			catch (Exception ex)
 			{
 				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Failed to load Backpack sprite: {ex}");
+			}
+		}
+
+		// Returns the Backpack.png bytes. Prefers an external file next to the mod (so users can override
+		// the image), then falls back to the copy embedded in this assembly. The release zips do not ship
+		// the loose asset, so the embedded copy is what makes the backpack image work after install.
+		private static byte[] GetBackpackPngBytes()
+		{
+			try
+			{
+				string assetsPath = Path.Combine(Path.GetDirectoryName(typeof(BackpackPanelPatch).Assembly.Location), "Assets", "Backpack.png");
+				if (File.Exists(assetsPath))
+				{
+					return File.ReadAllBytes(assetsPath);
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Could not read external Backpack.png, using embedded copy: {ex.Message}");
+			}
+
+			try
+			{
+				Assembly assembly = typeof(BackpackPanelPatch).Assembly;
+				string resourceName = Array.Find(assembly.GetManifestResourceNames(), n => n.EndsWith("Backpack.png", StringComparison.OrdinalIgnoreCase));
+				if (resourceName == null)
+				{
+					MelonLogger.Error("[InventoryExpansion][BackpackPanel] Embedded Backpack.png resource not found");
+					return null;
+				}
+
+				using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+				{
+					if (stream == null)
+					{
+						return null;
+					}
+
+					using (MemoryStream ms = new MemoryStream())
+					{
+						stream.CopyTo(ms);
+						return ms.ToArray();
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				MelonLogger.Error($"[InventoryExpansion][BackpackPanel] Failed to read embedded Backpack.png: {ex}");
+				return null;
 			}
 		}
 

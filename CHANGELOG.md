@@ -4,6 +4,15 @@ All notable changes to InventoryExpansion are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.4.4] - 2026-06-23
+
+### Fixed
+- The backpack image shows up again after installing from Thunderstore or Nexus. The
+  release packages did not include Backpack.png, so the backpack panel had no image.
+  The image is now bundled inside the mod itself, so no separate file is needed. You
+  can still override it by placing your own Backpack.png in an "Assets" folder next to
+  the mod DLL.
+
 ## [1.4.3] - 2026-06-23
 
 ### Fixed
