@@ -172,14 +172,18 @@ namespace InventoryExpansion.Patches
 				{
 					loaded = texture.LoadImage(fileData);
 				}
-				catch
+				catch (System.Exception first)
 				{
+					// The extension method moved between Unity versions, so the second way is a
+					// real fallback, not a retry. Both failing is worth a line each.
+					MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Texture2D.LoadImage failed, trying ImageConversion: {first.Message}");
 					try
 					{
 						loaded = UnityEngine.ImageConversion.LoadImage(texture, fileData);
 					}
-					catch
+					catch (System.Exception second)
 					{
+						MelonLogger.Error($"[InventoryExpansion][BackpackPanel] ImageConversion.LoadImage failed as well: {second.Message}");
 					}
 				}
 				
@@ -692,8 +696,9 @@ namespace InventoryExpansion.Patches
 			{
 				_keyHintText.gameObject.SetActive(true);
 			}
-			catch
+			catch (System.Exception ex)
 			{
+				MelonLogger.Warning($"[InventoryExpansion][BackpackPanel] Key hint stays hidden: {ex.Message}");
 			}
 		}
 

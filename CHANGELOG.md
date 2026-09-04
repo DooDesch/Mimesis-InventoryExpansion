@@ -4,6 +4,14 @@ All notable changes to InventoryExpansion are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.4.5] - 2026-09-04
+
+### Changed
+- The mod is built against MIMESIS 0.3.1 and tested in a running game on that build. Inventory behaviour does not change.
+
+### Fixed
+- The log says why the backpack image did not load. Before, two failures were silent, thus a missing backpack image looked the same as a mod that never started.
+
 ## [1.4.4] - 2026-06-23
 
 ### Fixed
