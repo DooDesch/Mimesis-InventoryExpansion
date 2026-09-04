@@ -87,3 +87,7 @@ Stored in `UserData/MelonPreferences.cfg` under the `[InventoryExpansion]` categ
 - The panel auto-hides during loading screens and map changes, and when you leave the game or return to the title screen.
 
 Source code and issues: [github.com/DooDesch/Mimesis-InventoryExpansion](https://github.com/DooDesch/Mimesis-InventoryExpansion).
+
+## AI disclosure
+
+The mod icon is AI-generated. Code and configuration are hand-written.

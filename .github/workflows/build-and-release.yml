@@ -34,15 +34,32 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Verify version in csproj matches the tag
+      - name: Determine version from the tag
         id: version-check
         run: |
+          # Die Version steht nur im Tag. Die csproj traegt bewusst nur den Platzhalter 0.0.0-dev,
+          # und der Build bekommt die echte Zahl weiter unten als globale MSBuild-Eigenschaft, die
+          # eine Projektdatei nicht ueberschreiben kann.
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          CS_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" InventoryExpansion.csproj)
-          if [ "$TAG_VERSION" != "$CS_VERSION" ]; then
-            echo "Version mismatch: Tag version is $TAG_VERSION, but csproj version is $CS_VERSION"
+          if ! printf '%s' "$TAG_VERSION" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+            echo "::error::Tag '$TAG_VERSION' ist keine Version der Form X.Y.Z. Der Ausloeser v* trifft auch vNext und v1.2.3-rc1."
             exit 1
           fi
+
+          # Eine echte Zahl in der csproj kann nur von Hand hineingeschrieben worden sein und weicht
+          # spaetestens beim naechsten Release ab.
+          CS_VERSION=$(grep -oPm1 '<Version[^>]*>\K[^<]+' InventoryExpansion.csproj || true)
+          if [ -n "$CS_VERSION" ] && [ "$CS_VERSION" != "0.0.0-dev" ]; then
+            echo "::error::InventoryExpansion.csproj traegt die Version '$CS_VERSION'. Sie kommt aus dem Tag; hier gehoert 0.0.0-dev hin."
+            exit 1
+          fi
+
+          MANIFEST_VERSION=$(grep -oPm1 '(?<="version_number": ")[^"]+' thunderstore/manifest.json || true)
+          if [ "$MANIFEST_VERSION" != "0.0.0" ]; then
+            echo "::error::thunderstore/manifest.json traegt version_number '$MANIFEST_VERSION'. Die CI schreibt die echte Zahl beim Release; im Repo gehoert 0.0.0 hin."
+            exit 1
+          fi
+
           echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract release notes from CHANGELOG.md
@@ -82,7 +99,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build the project
-        run: dotnet build --configuration Release /p:GameManagedPath="${{ github.workspace }}/Workspace/lib/game" /p:MelonLoaderPath="${{ github.workspace }}/Workspace/lib/melonloader"
+        run: dotnet build --configuration Release /p:Version="${{ steps.version-check.outputs.version }}" /p:GameManagedPath="${{ github.workspace }}/Workspace/lib/game" /p:MelonLoaderPath="${{ github.workspace }}/Workspace/lib/melonloader"
 
       - name: Prepare release directory
         run: |
@@ -111,6 +128,30 @@ jobs:
 
       - name: Create release ZIP
         run: zip -j "InventoryExpansion_${{ steps.version-check.outputs.version }}.zip" release/*
+
+      - name: Bundle for Nexus
+        run: |
+          # Getrenntes Archiv, weil die Zielgruppen verschieden sind: Thunderstore braucht
+          # manifest.json und icon.png, ein Nexus-Nutzer entpackt von Hand nach Mods/ und soll
+          # dort keine Paketmetadaten liegen haben.
+          mkdir -p nexus
+          cp bin/Release/netstandard2.1/InventoryExpansion.dll nexus/
+          if [ -d "Assets" ]; then
+            mkdir -p nexus/Assets
+            cp Assets/*.png nexus/Assets/ 2>/dev/null || true
+          fi
+          if [ -f "thunderstore/README.md" ]; then
+            cp thunderstore/README.md nexus/ || true
+          fi
+          zip -r "InventoryExpansion_${{ steps.version-check.outputs.version }}_nexus.zip" nexus/* 
+          echo "Nexus bundle contents:"
+          unzip -l "InventoryExpansion_${{ steps.version-check.outputs.version }}_nexus.zip"
+
+      - name: Upload Nexus ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InventoryExpansion-nexus
+          path: "InventoryExpansion_${{ steps.version-check.outputs.version }}_nexus.zip"
 
       - name: Upload Release ZIP
         uses: actions/upload-artifact@v4
@@ -182,14 +223,14 @@ jobs:
       - name: Download built ZIP
         uses: actions/download-artifact@v4
         with:
-          name: InventoryExpansion
+          name: InventoryExpansion-nexus
 
       - name: Upload to Nexus Mods
         uses: Nexus-Mods/upload-action@v1.0.0-beta.7
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           file_group_id: "7545485"
-          filename: "InventoryExpansion_${{ needs.build.outputs.version }}.zip"
+          filename: "InventoryExpansion_${{ needs.build.outputs.version }}_nexus.zip"
           version: ${{ needs.build.outputs.version }}
           display_name: "InventoryExpansion ${{ needs.build.outputs.version }}"
           description: ${{ needs.build.outputs.notes_bbcode }}
