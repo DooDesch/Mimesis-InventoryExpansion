@@ -1,4 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- Shared build layer. Two lines per props file, and only one of them ever matches: locally
+	     Workspace is a sibling of this folder, in CI it is checked out INTO this repo. -->
+	<Import Project="$(MSBuildThisFileDirectory)../Workspace/build/GameRefs.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/GameRefs.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)Workspace/build/GameRefs.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/GameRefs.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)../Workspace/build/Deploy.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/Deploy.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)Workspace/build/Deploy.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/Deploy.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)../Workspace/build/Hardening.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/Hardening.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)Workspace/build/Hardening.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/Hardening.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)../Workspace/build/ModVersion.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/ModVersion.props')" />
+	<Import Project="$(MSBuildThisFileDirectory)Workspace/build/ModVersion.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/ModVersion.props')" />
+
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -6,101 +18,45 @@
 		<RootNamespace>InventoryExpansion</RootNamespace>
 		<LangVersion>latest</LangVersion>
 		<IsPackable>false</IsPackable>
-		<Version>1.4.4</Version>
-		<AssemblyVersion>1.4.4.0</AssemblyVersion>
-		<FileVersion>1.4.4.0</FileVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<AssemblyName>InventoryExpansion</AssemblyName>
-		<WorkspaceLibPath Condition="'$(WorkspaceLibPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib</WorkspaceLibPath>
-		<GameManagedPath Condition="'$(GameManagedPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib/game</GameManagedPath>
-		<MelonLoaderPath Condition="'$(MelonLoaderPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib/melonloader</MelonLoaderPath>
+		<!-- The real version comes from the release tag as -p:Version and reaches MelonInfo through
+		     DooDesch.ModVersion.Current (Workspace/build/ModVersion.props). -->
+		<Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
 	</PropertyGroup>
 
+	<!-- On top of the five in GameRefs.props. Each one is here because the compiler named it. -->
 	<ItemGroup>
-		<Reference Include="Assembly-CSharp">
-			<HintPath>$(GameManagedPath)/Assembly-CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="ReluProtocol">
-			<HintPath>$(GameManagedPath)/ReluProtocol.dll</HintPath>
+		<Reference Include="Unity.InputSystem">
+			<HintPath>$(GameManagedPath)/Unity.InputSystem.dll</HintPath>
 		</Reference>
 		<Reference Include="Unity.TextMeshPro">
 			<HintPath>$(GameManagedPath)/Unity.TextMeshPro.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.CoreModule">
-			<HintPath>$(GameManagedPath)/UnityEngine.CoreModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine">
-			<HintPath>$(GameManagedPath)/UnityEngine.dll</HintPath>
-		</Reference>
 		<Reference Include="UnityEngine.UI">
 			<HintPath>$(GameManagedPath)/UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIModule">
-			<HintPath>$(GameManagedPath)/UnityEngine.UIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.InputLegacyModule">
-			<HintPath>$(GameManagedPath)/UnityEngine.InputLegacyModule.dll</HintPath>
 		</Reference>
 		<Reference Include="UnityEngine.ImageConversionModule">
 			<HintPath>$(GameManagedPath)/UnityEngine.ImageConversionModule.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.InputSystem">
-			<HintPath>$(GameManagedPath)/Unity.InputSystem.dll</HintPath>
-		</Reference>
-		<Reference Include="MelonLoader">
-			<HintPath>$(MelonLoaderPath)/MelonLoader.dll</HintPath>
-		</Reference>
-		<Reference Include="0Harmony">
-			<HintPath>$(MelonLoaderPath)/0Harmony.dll</HintPath>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>$(GameManagedPath)/UnityEngine.UIModule.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 
-	<PropertyGroup>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-		<!-- Suppress warnings from MimicAPI dependencies that are not needed at build time -->
-		<NoWarn>MSB3245</NoWarn>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<Compile Include="Core.cs" />
-		<Compile Include="Config\InventoryExpansionPreferences.cs" />
-		<Compile Include="Patches\GameConfigPatches.cs" />
-		<Compile Include="Patches\InventoryControllerPatches.cs" />
-		<Compile Include="Patches\InventoryUiPatches.cs" />
-		<Compile Include="Patches\InventoryDebugPatches.cs" />
-		<Compile Include="Patches\BackpackPanelPatch.cs" />
-		<Compile Include="Patches\InventorySelectionPatches.cs" />
-		<Compile Include="Patches\InventoryPickupPatches.cs" />
-		<Compile Include="Patches\LargeItemBackpackPatch.cs" />
-	</ItemGroup>
-	
 	<ItemGroup>
 		<!-- Embedded so the backpack image ships inside the DLL. Release zips do not include the loose
 		     asset, and the runtime loads it from the embedded resource (with an external-file override). -->
 		<EmbeddedResource Include="Assets\Backpack.png" />
 	</ItemGroup>
-	<!-- Uncomment to use MimicAPI -->
-	<!-- <ItemGroup>
-		<ProjectReference Include="$(MimicAPIPath)/MimicAPI.csproj">
-			<ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-			<Private>false</Private>
-		</ProjectReference>
-	</ItemGroup> -->
-	
-	<PropertyGroup>
-		<ModsDirectory>F:\Launcher\SteamLibrary\steamapps\common\MIMESIS\Mods</ModsDirectory>
-		<GameExePath>F:\Launcher\SteamLibrary\steamapps\common\MIMESIS\MIMESIS.exe</GameExePath>
-		<MimicAPIPath Condition="'$(MimicAPIPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/MimicAPI</MimicAPIPath>
-	</PropertyGroup>
 
-	<Target Name="PostBuild" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-		<Exec Condition="Exists('$(ModsDirectory)')" Command="cmd /c if exist &quot;$(ModsDirectory)&quot; copy /Y &quot;$(TargetPath)&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" />
-		<Exec Condition="Exists('$(ModsDirectory)') And Exists('$(TargetDir)Assets\Backpack.png')" Command="cmd /c if not exist &quot;$(ModsDirectory)\Assets&quot; mkdir &quot;$(ModsDirectory)\Assets&quot; &amp;&amp; copy /Y &quot;$(TargetDir)Assets\Backpack.png&quot; &quot;$(ModsDirectory)\Assets\Backpack.png&quot;" ContinueOnError="true" />
-		<!-- Uncomment to copy MimicAPI.dll automatically -->
-		<!-- <Exec Condition="Exists('$(ModsDirectory)') And Exists('$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll')" Command="cmd /c copy /Y &quot;$(MimicAPIPath)\bin\$(Configuration)\netstandard2.1\MimicAPI.dll&quot; &quot;$(ModsDirectory)&quot;" ContinueOnError="true" /> -->
-		<!-- Uncomment to auto-start game after build (only if not already running) -->
-		<!-- <Exec Condition="Exists('$(GameExePath)') And '$(GIT_INDEX_FILE)' == ''" Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;if (-not (Get-Process -Name 'MIMESIS' -ErrorAction SilentlyContinue)) { Start-Process -FilePath '$(GameExePath)' }&quot;" ContinueOnError="true" /> -->
+	<!-- The DLL copy itself lives in Deploy.props. Only the loose asset is mod specific: it is the
+	     external-file override the runtime prefers over the embedded copy, so a test install needs it
+	     next to the DLL. -->
+	<Target Name="DeployBackpackAsset" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+		<Exec Condition="Exists('$(ModsDirectory)') And Exists('$(TargetDir)Assets\Backpack.png')"
+		      Command="cmd /c if not exist &quot;$(ModsDirectory)\Assets&quot; mkdir &quot;$(ModsDirectory)\Assets&quot; &amp;&amp; copy /Y &quot;$(TargetDir)Assets\Backpack.png&quot; &quot;$(ModsDirectory)\Assets\Backpack.png&quot;"
+		      ContinueOnError="true" />
 	</Target>
-</Project>
 
+</Project>

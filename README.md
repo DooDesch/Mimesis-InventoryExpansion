@@ -115,3 +115,7 @@ References are resolved from `Workspace/lib/game` (game DLLs) and `Workspace/lib
 ## Credits / License
 
 Author: DooDesch. Provided as-is under the MIT License. Contributions welcome via pull requests on the [repository](https://github.com/DooDesch/Mimesis-InventoryExpansion).
+
+## AI disclosure
+
+The mod icon is AI-generated. Code and configuration are hand-written.
